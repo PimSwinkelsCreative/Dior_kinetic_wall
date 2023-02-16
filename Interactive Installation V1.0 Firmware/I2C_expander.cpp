@@ -14,9 +14,7 @@ void setupI2CExpander() {
     // Serial.println(String(i) + " Set pin " + String(motorDirPins[i]) +
     //                " as output");
   }
-  Serial.println("1");
   pinMode(EXPANDER_INTERRUPT_PIN, INPUT_PULLUP);
-  Serial.println("2");
 }
 
 void digitalWriteI2CExpanderPin(uint8_t pin, bool value) {

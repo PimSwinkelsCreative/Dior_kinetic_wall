@@ -9,7 +9,7 @@ void setupMotors() {
     // generate motor objects
     motors[i] = new AccelStepperI2CDir(motorStepPins[i], motorDirPins[i]);
     motors[i]->setMaxSpeed(200);
-    motors[i]->setAcceleration(1000);
+    motors[i]->setAcceleration(5000);
     motors[i]->moveTo(0);
     motors[i]->setMinPulseWidth(30);
 

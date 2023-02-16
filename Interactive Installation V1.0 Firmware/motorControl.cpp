@@ -9,10 +9,11 @@ void setupMotors() {
     // generate motor objects
     motors[i] = new AccelStepperI2CDir(motorStepPins[i], motorDirPins[i],
                                        SENSORPINS_INVERTED);
-    motors[i]->setMaxSpeed(200);
-    motors[i]->setAcceleration(5000);
+    motors[i]->setMaxSpeed(1 * MICROSTEP_SCALE_FACTOR * STEPS_PER_REVOLUTION);
+    motors[i]->setAcceleration(1 * MICROSTEP_SCALE_FACTOR *
+                               STEPS_PER_REVOLUTION);
     motors[i]->moveTo(0);
-    motors[i]->setMinPulseWidth(30);
+    motors[i]->setMinPulseWidth(20);  // time in mircoseconds
 
     // setup the step pins:
     pinMode(motorStepPins[i], OUTPUT);
@@ -27,12 +28,16 @@ void setupMotors() {
   enableMotors(true);
 }
 
-void moveMotorToPosition(uint8_t index, float position, float speed) {
+void moveMotorToPosition(uint8_t index, float position, float speed,
+                         float acceleration) {
   float speedValue = speed * MICROSTEP_SCALE_FACTOR * STEPS_PER_REVOLUTION;
+  float accelValue =
+      acceleration * MICROSTEP_SCALE_FACTOR * STEPS_PER_REVOLUTION;
   long positionValue = position * MICROSTEP_SCALE_FACTOR * STEPS_PER_REVOLUTION;
 
   motors[index]->setMaxSpeed(speedValue);
   motors[index]->moveTo(positionValue);
+  if (acceleration > 0) motors[index]->setAcceleration(accelValue);
 }
 
 void updateMotors() {

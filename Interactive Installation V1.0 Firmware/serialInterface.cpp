@@ -55,26 +55,35 @@ void parseSerialBuffer() {
     int argument = 0;
     int argumentIndex = 0;
     for (int i = 0; i < strlen(message); i++) {
-      if (message[i] != ';') {
-        messageArguments[argument][argumentIndex] = message[i];
-        argumentIndex++;
-      } else {
+      if (message[i] == ';') {
+        // null terminate the caharacter array
         messageArguments[argument][argumentIndex] = '\0';
 #ifdef DEBUG_SERIAL_INTERFACE
         Serial.print("argument " + String(argument) + ": ");
         printChararray(messageArguments[argument],
                        strlen(messageArguments[argument]));
 #endif
+        // prepare for the next argument:
         argument++;
         argumentIndex = 0;
+
+      } else {
+        messageArguments[argument][argumentIndex] = message[i];
+        argumentIndex++;
+        if (i == strlen(message) - 1) {
+          // null terminate the caharacter array
+          messageArguments[argument][argumentIndex] = '\0';
+#ifdef DEBUG_SERIAL_INTERFACE
+          Serial.print("argument " + String(argument) + ": ");
+          printChararray(messageArguments[argument],
+                         strlen(messageArguments[argument]));
+#endif
+        }
       }
     }
-    // terminate the last argument
-    messageArguments[argument][argumentIndex] = '\0';
+
 #ifdef DEBUG_SERIAL_INTERFACE
-    Serial.print("argument " + String(argument) + ": ");
-    printChararray(messageArguments[argument],
-                   strlen(messageArguments[argument]));
+    Serial.println("Number of arguments found: " + String(argument));
 #endif
 
     if (messageArguments[0][0] == 'M' || 'm') {
@@ -87,23 +96,38 @@ void parseSerialBuffer() {
                                                    strlen(messageArguments[1]));
         float motorSpeed = getfloatFromCharArray(messageArguments[2],
                                                  strlen(messageArguments[2]));
-        if (motorAddress >= 0 && motorAddress < NUM_MOTORS) {
-          moveMotorToPosition(motorAddress, goalPosition, motorSpeed);
+        // optional: get the acceleration value and add it to the function
+        float motorAcceleration = 0;
+        if (strlen(messageArguments[3]) && argument >= 3) {
 #ifdef DEBUG_SERIAL_INTERFACE
-          Serial.println("Trying to move motor " + String(motorAddress) +
-                         " to position " + String(goalPosition) +
-                         " with speed " + String(motorSpeed));
+          Serial.print("argument 3: ");
+          printChararray(messageArguments[3], strlen(messageArguments[3]));
+#endif
+          motorAcceleration = getfloatFromCharArray(
+              messageArguments[3], strlen(messageArguments[3]));
+        }
+        if (motorAddress >= 0 && motorAddress < NUM_MOTORS) {
+          moveMotorToPosition(motorAddress, goalPosition, motorSpeed,
+                              motorAcceleration);
+#ifdef DEBUG_SERIAL_INTERFACE
+          Serial.print("Trying to move motor " + String(motorAddress) +
+                       " to position " + String(goalPosition) + " with speed " +
+                       String(motorSpeed));
+          if (motorAcceleration > 0)
+            Serial.print(" and acceleration " + String(motorAcceleration));
+          Serial.println();
 #endif
         } else {
-#ifdef DEBUG_SERIAL_INTERFACE
-          Serial.println("Missing some arguments, will ignore this command");
-#endif
+          Serial.println("ERROR: motor index out of range");
         }
+      } else {
+#ifdef DEBUG_SERIAL_INTERFACE
+        Serial.println(
+            "ERROR: Missing some arguments, will ignore this command");
+#endif
       }
     } else {
-#ifdef DEBUG_SERIAL_INTERFACE
-      Serial.println("unknown command, command is ignored");
-#endif
+      Serial.println("ERROR: unknown command, command is ignored");
     }
   }
 }

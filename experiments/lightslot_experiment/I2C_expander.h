@@ -5,6 +5,9 @@
 
 extern bool lightSensorChangeFlag;
 
+void setLightSensorChangeFlag();
+
+
 void setupI2CExpander();
 
 void digitalWriteI2CExpanderPin(uint8_t pin, bool value);

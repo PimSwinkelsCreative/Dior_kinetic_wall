@@ -16,7 +16,7 @@
 #define MS1_PIN 25
 #define MS2_PIN 26
 #define MOTOR_ENABLE_PIN 4
-#define EXPANDER_INTERRUPT_PIN 34
+#define EXPANDER_INTERRUPT_PIN 33
 
 const uint8_t motorStepPins[] = {MOTOR1_STEP, MOTOR2_STEP, MOTOR3_STEP,
                                  MOTOR4_STEP, MOTOR5_STEP, MOTOR6_STEP,

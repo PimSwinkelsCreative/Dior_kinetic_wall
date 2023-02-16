@@ -7,7 +7,8 @@ void setupMotors() {
 
   for (int i = 0; i < NUM_MOTORS; i++) {
     // generate motor objects
-    motors[i] = new AccelStepperI2CDir(motorStepPins[i], motorDirPins[i]);
+    motors[i] = new AccelStepperI2CDir(motorStepPins[i], motorDirPins[i],
+                                       SENSORPINS_INVERTED);
     motors[i]->setMaxSpeed(200);
     motors[i]->setAcceleration(5000);
     motors[i]->moveTo(0);
@@ -32,16 +33,51 @@ void moveMotorToPosition(uint8_t index, float position, float speed) {
 
   motors[index]->setMaxSpeed(speedValue);
   motors[index]->moveTo(positionValue);
-
-  Serial.println("moving motor " + String(index + 1) + " to position " +
-                 String(positionValue) + " with speed " + String(speedValue));
 }
 
 void updateMotors() {
+  // first check the sensors if a change has been detected
+  // only read the statusses if the motor is homing to save on reads
+  if (lightSensorChangeFlag) {
+    for (int i = 0; i < NUM_MOTORS; i++) {
+      if (motors[i]->isHoming()) {
+        // save the state of the expander pins, pin polarity is handled by
+        // function
+        motors[i]->setSensorState(
+            digitalReadI2CExpanderPin(lightSensorPins[i]));
+      }
+    }
+    lightSensorChangeFlag = false;  // clear the flag
+  }
+
+  // update the motors
   for (int i = 0; i < NUM_MOTORS; i++) {
+    // check if the motor is in a homing procedure, if so handle the homing
+    // (overwrites all other commands)
+    if (motors[i]->isHoming()) {
+      if (motors[i]->getSensorState()) {
+        // zero position reached!
+        motors[i]->setHoming(false);
+        motors[i]->setCurrentPosition(
+            0);  // set the current position to be the 0 coordinate
+        motors[i]->moveTo(0);  // set the new 0 position as the new setpoint
+      } else {
+        // Serial.println("Motor " + String(i + 1) +
+        //                " is homing, sensor value is: " +
+        //                String(motors[i]->getSensorState()));
+
+        motors[i]->move(HOMINGSTEPSINCREMENT);  // move a few steps relative to
+                                                // the current position
+        motors[i]->setAcceleration(HOMINGACCELERATION);
+        motors[i]->setMaxSpeed(HOMINGSPEED);
+      }
+    }
+
+    //
     motors[i]->run();
   }
 }
+
 // set the pins based on the globally defined MICROSTEP_SCALE_FACTOR
 void setMicroSteppingPins() {
   switch (MICROSTEP_SCALE_FACTOR) {
@@ -69,7 +105,13 @@ void setMicroSteppingPins() {
 
 void enableMotors(bool state) { digitalWrite(MOTOR_ENABLE_PIN, !state); }
 
-AccelStepperI2CDir::AccelStepperI2CDir(uint8_t stepPin, uint8_t dirPin) {
+void startMotorHoming(uint8_t motorIndex) {
+  if (motorIndex < 0 || motorIndex >= NUM_MOTORS) return;
+  motors[motorIndex]->setHoming(true);
+}
+
+AccelStepperI2CDir::AccelStepperI2CDir(uint8_t stepPin, uint8_t dirPin,
+                                       bool sensorPinInverted) {
   _stepPin = stepPin;
   _dirPin = dirPin;
   _currentPos = 0;
@@ -84,6 +126,9 @@ AccelStepperI2CDir::AccelStepperI2CDir(uint8_t stepPin, uint8_t dirPin) {
   _lastStepTime = 0;
   _stepPinInverted = true;
   _dirPinInverted = false;
+  _homingActive = false;
+  _sensorStatus = false;
+  _sensorPinInverted = sensorPinInverted;
 
   // NEW
   _n = 0;
@@ -221,10 +266,10 @@ unsigned long AccelStepperI2CDir::computeNewSpeed() {
   return _stepInterval;
 }
 
-// Run the motor to implement speed and acceleration in order to proceed to the
-// target position You must call this at least once per step, preferably in your
-// main loop If the motor is in the desired position, the cost is very small
-// returns true if the motor is still running to the target position.
+// Run the motor to implement speed and acceleration in order to proceed to
+// the target position You must call this at least once per step, preferably
+// in your main loop If the motor is in the desired position, the cost is very
+// small returns true if the motor is still running to the target position.
 boolean AccelStepperI2CDir::run() {
   if (runSpeed()) computeNewSpeed();
   return _speed != 0.0 || distanceToGo() != 0;
@@ -247,16 +292,16 @@ void AccelStepperI2CDir::setMaxSpeed(float speed) {
 float AccelStepperI2CDir::maxSpeed() { return _maxSpeed; }
 
 void AccelStepperI2CDir::setAcceleration(float acceleration) {
+  if (acceleration == _acceleration) return;
   if (acceleration == 0.0) return;
   if (acceleration < 0.0) acceleration = -acceleration;
-  if (_acceleration != acceleration) {
-    // Recompute _n per Equation 17
-    _n = _n * (_acceleration / acceleration);
-    // New c0 per Equation 7, with correction per Equation 15
-    _c0 = 0.676 * sqrt(2.0 / acceleration) * 1000000.0;  // Equation 15
-    _acceleration = acceleration;
-    computeNewSpeed();
-  }
+
+  // Recompute _n per Equation 17
+  _n = _n * (_acceleration / acceleration);
+  // New c0 per Equation 7, with correction per Equation 15
+  _c0 = 0.676 * sqrt(2.0 / acceleration) * 1000000.0;  // Equation 15
+  _acceleration = acceleration;
+  computeNewSpeed();
 }
 
 float AccelStepperI2CDir::acceleration() { return _acceleration; }
@@ -390,3 +435,15 @@ void AccelStepperI2CDir::stop() {
 bool AccelStepperI2CDir::isRunning() {
   return !(_speed == 0.0 && _targetPos == _currentPos);
 }
+
+void AccelStepperI2CDir::setHoming(bool value) { _homingActive = value; }
+bool AccelStepperI2CDir::isHoming() { return _homingActive; }
+
+void AccelStepperI2CDir::setSensorState(bool state) {
+  if (_sensorPinInverted) {
+    _sensorStatus = !state;
+  } else {
+    _sensorStatus = state;
+  }
+}
+bool AccelStepperI2CDir::getSensorState() { return _sensorStatus; }

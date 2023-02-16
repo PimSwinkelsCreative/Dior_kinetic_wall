@@ -78,20 +78,32 @@ void parseSerialBuffer() {
 #endif
 
     if (messageArguments[0][0] == 'M' || 'm') {
-      uint8_t motorAddress =
-          getIntFromCharArray(messageArguments[0], strlen(messageArguments[0]));
-      float goalPosition = getfloatFromCharArray(messageArguments[1],
-                                                 strlen(messageArguments[1]));
-      float motorSpeed = getfloatFromCharArray(messageArguments[2],
-                                               strlen(messageArguments[2]));
-      if (motorAddress >= 0 && motorAddress < NUM_MOTORS) {
-        moveMotorToPosition(motorAddress, goalPosition, motorSpeed);
+      // first check if all fields are set correctly:
+      if (strlen(messageArguments[0]) && strlen(messageArguments[1]) &&
+          strlen(messageArguments[2])) {
+        uint8_t motorAddress = getIntFromCharArray(messageArguments[0],
+                                                   strlen(messageArguments[0]));
+        float goalPosition = getfloatFromCharArray(messageArguments[1],
+                                                   strlen(messageArguments[1]));
+        float motorSpeed = getfloatFromCharArray(messageArguments[2],
+                                                 strlen(messageArguments[2]));
+        if (motorAddress >= 0 && motorAddress < NUM_MOTORS) {
+          moveMotorToPosition(motorAddress, goalPosition, motorSpeed);
 #ifdef DEBUG_SERIAL_INTERFACE
-        Serial.println("Trying to move motor " + String(motorAddress) +
-                       " to position " + String(goalPosition) + " with speed " +
-                       String(motorSpeed));
+          Serial.println("Trying to move motor " + String(motorAddress) +
+                         " to position " + String(goalPosition) +
+                         " with speed " + String(motorSpeed));
 #endif
+        } else {
+#ifdef DEBUG_SERIAL_INTERFACE
+          Serial.println("Missing some arguments, will ignore this command");
+#endif
+        }
       }
+    } else {
+#ifdef DEBUG_SERIAL_INTERFACE
+      Serial.println("unknown command, command is ignored");
+#endif
     }
   }
 }

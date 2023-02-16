@@ -25,7 +25,8 @@ void startMotorHoming(uint8_t motorIndex);
 
 class AccelStepperI2CDir {
  public:
-  AccelStepperI2CDir(uint8_t stepPin, uint8_t dirPin);
+  AccelStepperI2CDir(uint8_t stepPin, uint8_t dirPin,
+                     bool sensorPinInverted = true);
 
   /// Set the target position. The run() function will try to move the motor (at
   /// most one step per call) from the current position to the target position
@@ -190,7 +191,15 @@ class AccelStepperI2CDir {
 
   void setHoming(bool value);
 
-  boolean isHoming();
+  bool isHoming();
+
+  // function that sets the state of the zero position sensor. state is true if
+  // the sensor is at the zero position
+  void setSensorState(bool state);
+
+  // function that returns the state of the zero position sensor value.
+  // state is true if the sensor is at the zero position
+  bool getSensorState();
 
  protected:
   /// \brief Direction indicator
@@ -301,5 +310,10 @@ class AccelStepperI2CDir {
   float _cmin;  // at max speed
 
   // flag to see if the homing procedure is active
-  boolean _homingActive;
+  bool _homingActive;
+
+  // bool that holds the light detector status:
+  bool _sensorStatus;
+
+  bool _sensorPinInverted;
 };

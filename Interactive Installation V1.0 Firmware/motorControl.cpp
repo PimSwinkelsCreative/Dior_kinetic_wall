@@ -36,31 +36,48 @@ void moveMotorToPosition(uint8_t index, float position, float speed) {
 }
 
 void updateMotors() {
-  for (int i = 0; i < NUM_MOTORS; i++) {
-    // check if the motor is in a homing procedure, if so handle the homing
-    if (motors[i]->isHoming()) {
-      motors[i]->move(HOMINGSTEPSINCREMENT);  // move a few steps
-      motors[i]->setAcceleration(HOMINGACCELERATION);
-      motors[i]->setMaxSpeed(HOMINGSPEED);
-
-      if (lightSensorChangeFlag) {
-        // check if this was the I2C pin that caused the change
-        //  sensor is low active
-        if (!digitalReadI2CExpanderPin(lightSensorPins[i])) {
-          motors[i]->setHoming(false);
-          motors[i]->setCurrentPosition(
-              0);  // set the current position to be the 0 coordinate
-          motors[i]->moveTo(0);  // set the new 0 position as the new setpoint
-
-          lightSensorChangeFlag = false;  // clear the flag since this is the
-          // motor that caused the change
-          Serial.println("Motor " + String(i) + " completed homing!");
-        }
+  // first check the sensors if a change has been detected
+  // only read the statusses if the motor is homing to save on reads
+  if (lightSensorChangeFlag) {
+    for (int i = 0; i < NUM_MOTORS; i++) {
+      if (motors[i]->isHoming()) {
+        // save the state of the expander pins, pin polarity is handled by
+        // function
+        motors[i]->setSensorState(
+            digitalReadI2CExpanderPin(lightSensorPins[i]));
       }
     }
+    lightSensorChangeFlag = false;  // clear the flag
+  }
+
+  // update the motors
+  for (int i = 0; i < NUM_MOTORS; i++) {
+    // check if the motor is in a homing procedure, if so handle the homing
+    // (overwrites all other commands)
+    if (motors[i]->isHoming()) {
+      if (motors[i]->getSensorState()) {
+        // zero position reached!
+        motors[i]->setHoming(false);
+        motors[i]->setCurrentPosition(
+            0);  // set the current position to be the 0 coordinate
+        motors[i]->moveTo(0);  // set the new 0 position as the new setpoint
+      } else {
+        // Serial.println("Motor " + String(i + 1) +
+        //                " is homing, sensor value is: " +
+        //                String(motors[i]->getSensorState()));
+
+        motors[i]->move(HOMINGSTEPSINCREMENT);  // move a few steps relative to
+                                                // the current position
+        motors[i]->setAcceleration(HOMINGACCELERATION);
+        motors[i]->setMaxSpeed(HOMINGSPEED);
+      }
+    }
+
+    //
     motors[i]->run();
   }
 }
+
 // set the pins based on the globally defined MICROSTEP_SCALE_FACTOR
 void setMicroSteppingPins() {
   switch (MICROSTEP_SCALE_FACTOR) {
@@ -91,9 +108,12 @@ void enableMotors(bool state) { digitalWrite(MOTOR_ENABLE_PIN, !state); }
 void startMotorHoming(uint8_t motorIndex) {
   if (motorIndex < 0 || motorIndex >= NUM_MOTORS) return;
   motors[motorIndex]->setHoming(true);
+  motors[motorIndex]->setSensorState(
+      digitalReadI2CExpanderPin(lightSensorPins[motorIndex]));
 }
 
-AccelStepperI2CDir::AccelStepperI2CDir(uint8_t stepPin, uint8_t dirPin) {
+AccelStepperI2CDir::AccelStepperI2CDir(uint8_t stepPin, uint8_t dirPin,
+                                       bool sensorPinInverted) {
   _stepPin = stepPin;
   _dirPin = dirPin;
   _currentPos = 0;
@@ -109,6 +129,8 @@ AccelStepperI2CDir::AccelStepperI2CDir(uint8_t stepPin, uint8_t dirPin) {
   _stepPinInverted = true;
   _dirPinInverted = false;
   _homingActive = false;
+  _sensorStatus = false;
+  _sensorPinInverted = sensorPinInverted;
 
   // NEW
   _n = 0;
@@ -246,10 +268,10 @@ unsigned long AccelStepperI2CDir::computeNewSpeed() {
   return _stepInterval;
 }
 
-// Run the motor to implement speed and acceleration in order to proceed to the
-// target position You must call this at least once per step, preferably in your
-// main loop If the motor is in the desired position, the cost is very small
-// returns true if the motor is still running to the target position.
+// Run the motor to implement speed and acceleration in order to proceed to
+// the target position You must call this at least once per step, preferably
+// in your main loop If the motor is in the desired position, the cost is very
+// small returns true if the motor is still running to the target position.
 boolean AccelStepperI2CDir::run() {
   if (runSpeed()) computeNewSpeed();
   return _speed != 0.0 || distanceToGo() != 0;

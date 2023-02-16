@@ -40,5 +40,8 @@ void digitalWriteI2CExpanderPin(uint8_t pin, bool value) {
 }
 
 bool digitalReadI2CExpanderPin(uint8_t pin) {
-  return expander.digitalRead(pin);
+  bool value = expander.digitalRead(pin);
+  delay(15);  // delay is required for stable reading. Really annoying and
+              // inefficient
+  return value;
 }

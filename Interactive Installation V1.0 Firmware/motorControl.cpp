@@ -7,7 +7,8 @@ void setupMotors() {
 
   for (int i = 0; i < NUM_MOTORS; i++) {
     // generate motor objects
-    motors[i] = new AccelStepperI2CDir(motorStepPins[i], motorDirPins[i]);
+    motors[i] = new AccelStepperI2CDir(motorStepPins[i], motorDirPins[i],
+                                       SENSORPINS_INVERTED);
     motors[i]->setMaxSpeed(200);
     motors[i]->setAcceleration(5000);
     motors[i]->moveTo(0);
@@ -417,3 +418,12 @@ bool AccelStepperI2CDir::isRunning() {
 
 void AccelStepperI2CDir::setHoming(bool value) { _homingActive = value; }
 bool AccelStepperI2CDir::isHoming() { return _homingActive; }
+
+void AccelStepperI2CDir::setSensorState(bool state) {
+  if (_sensorPinInverted) {
+    _sensorStatus = !state;
+  } else {
+    _sensorStatus = state;
+  }
+}
+bool AccelStepperI2CDir::getSensorState() { return _sensorStatus; }

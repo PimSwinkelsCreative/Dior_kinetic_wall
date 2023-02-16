@@ -1,6 +1,6 @@
 #include "serialInterface.h"
 
-#define DEBUG_SERIAL_INTERFACE
+// #define DEBUG_SERIAL_INTERFACE
 
 #define BUFFERLENGTH 500
 char serialBuffer[BUFFERLENGTH + 1];
@@ -11,6 +11,8 @@ void setupSerialInterface(unsigned int baud) { Serial.begin(baud); }
 void updateSerial() {
   while (Serial.available()) {
     char inChar = Serial.read();
+    // convert all to lower case
+    if (inChar >= 'A' && inChar <= 'Z') inChar += ('a' - 'A');
     if (inChar == '\n') {
 #ifdef DEBUG_SERIAL_INTERFACE
       Serial.println("newline found, about to start parsing the message");
@@ -56,7 +58,7 @@ void parseSerialBuffer() {
     int argumentIndex = 0;
     for (int i = 0; i < strlen(message); i++) {
       if (message[i] == ';') {
-        // null terminate the caharacter array
+        // null terminate the character array
         messageArguments[argument][argumentIndex] = '\0';
 #ifdef DEBUG_SERIAL_INTERFACE
         Serial.print("argument " + String(argument) + ": ");
@@ -71,7 +73,7 @@ void parseSerialBuffer() {
         messageArguments[argument][argumentIndex] = message[i];
         argumentIndex++;
         if (i == strlen(message) - 1) {
-          // null terminate the caharacter array
+          // null terminate the character array
           messageArguments[argument][argumentIndex] = '\0';
 #ifdef DEBUG_SERIAL_INTERFACE
           Serial.print("argument " + String(argument) + ": ");
@@ -85,8 +87,11 @@ void parseSerialBuffer() {
 #ifdef DEBUG_SERIAL_INTERFACE
     Serial.println("Number of arguments found: " + String(argument));
 #endif
-
-    if (messageArguments[0][0] == 'M' || 'm') {
+    if (strcmp(messageArguments[0], "home") == 0) {
+      for (int i = 0; i < NUM_MOTORS; i++) {
+        startMotorHoming(i);
+      }
+    } else if (messageArguments[0][0] == 'm') {
       // first check if all fields are set correctly:
       if (strlen(messageArguments[0]) && strlen(messageArguments[1]) &&
           strlen(messageArguments[2])) {

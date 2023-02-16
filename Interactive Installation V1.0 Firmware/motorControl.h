@@ -314,7 +314,7 @@ class AccelStepperI2CDir {
   bool _homingActive;
 
   // bool that holds the light detector status:
-  bool _sensorStatus;
+  bool _sensorDetectFlag;
 
   bool _sensorPinInverted;
 };

@@ -66,6 +66,8 @@ void updateMotors() {
         motors[i]->setCurrentPosition(
             0);  // set the current position to be the 0 coordinate
         motors[i]->moveTo(0);  // set the new 0 position as the new setpoint
+        motors[i]->setSensorState(
+            false);  // allow for a new homing procedure in future
       } else {
         // Serial.println("Motor " + String(i + 1) +
         //                " is homing, sensor value is: " +
@@ -132,7 +134,7 @@ AccelStepperI2CDir::AccelStepperI2CDir(uint8_t stepPin, uint8_t dirPin,
   _stepPinInverted = true;
   _dirPinInverted = false;
   _homingActive = false;
-  _sensorStatus = false;
+  _sensorDetectFlag = false;
   _sensorPinInverted = sensorPinInverted;
 
   // NEW
@@ -446,9 +448,9 @@ bool AccelStepperI2CDir::isHoming() { return _homingActive; }
 
 void AccelStepperI2CDir::setSensorState(bool state) {
   if (_sensorPinInverted) {
-    _sensorStatus = !state;
+    _sensorDetectFlag = !state;
   } else {
-    _sensorStatus = state;
+    _sensorDetectFlag = state;
   }
 }
-bool AccelStepperI2CDir::getSensorState() { return _sensorStatus; }
+bool AccelStepperI2CDir::getSensorState() { return _sensorDetectFlag; }

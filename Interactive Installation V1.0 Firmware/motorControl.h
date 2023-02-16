@@ -5,6 +5,12 @@
 #define STEPS_PER_REVOLUTION 200
 #define MICROSTEP_SCALE_FACTOR 16
 
+#define HOMINGACCELERATION 1000
+#define HOMINGSPEED (0.1 * STEPS_PER_REVOLUTION * MICROSTEP_SCALE_FACTOR)
+#define HOMINGSTEPSINCREMENT \
+  1000  // just made it a large number to ensure continuous rotation. set the
+        // speed by varying the homingspeed
+
 void setupMotors();
 
 void moveMotorToPosition(uint8_t index, float position, float speed);
@@ -14,6 +20,8 @@ void updateMotors();
 void setMicroSteppingPins();
 
 void enableMotors(bool state);
+
+void startMotorHoming(uint8_t motorIndex);
 
 class AccelStepperI2CDir {
  public:
@@ -180,6 +188,10 @@ class AccelStepperI2CDir {
   /// Virtual destructor to prevent warnings during delete
   virtual ~AccelStepperI2CDir(){};
 
+  void setHoming(bool value);
+
+  boolean isHoming();
+
  protected:
   /// \brief Direction indicator
   /// Symbolic names for the direction the motor is turning
@@ -287,4 +299,7 @@ class AccelStepperI2CDir {
 
   /// Min step size in microseconds based on maxSpeed
   float _cmin;  // at max speed
+
+  // flag to see if the homing procedure is active
+  boolean _homingActive;
 };

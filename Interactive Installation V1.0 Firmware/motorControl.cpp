@@ -32,13 +32,31 @@ void moveMotorToPosition(uint8_t index, float position, float speed) {
 
   motors[index]->setMaxSpeed(speedValue);
   motors[index]->moveTo(positionValue);
-
-  Serial.println("moving motor " + String(index + 1) + " to position " +
-                 String(positionValue) + " with speed " + String(speedValue));
 }
 
 void updateMotors() {
   for (int i = 0; i < NUM_MOTORS; i++) {
+    // check if the motor is in a homing procedure, if so handle the homing
+    if (motors[i]->isHoming()) {
+      motors[i]->move(HOMINGSTEPSINCREMENT);  // move a few steps
+      motors[i]->setAcceleration(HOMINGACCELERATION);
+      motors[i]->setMaxSpeed(HOMINGSPEED);
+
+      if (lightSensorChangeFlag) {
+        // check if this was the I2C pin that caused the change
+        //  sensor is low active
+        if (!digitalReadI2CExpanderPin(lightSensorPins[i])) {
+          motors[i]->setHoming(false);
+          motors[i]->setCurrentPosition(
+              0);  // set the current position to be the 0 coordinate
+          motors[i]->moveTo(0);  // set the new 0 position as the new setpoint
+
+          lightSensorChangeFlag = false;  // clear the flag since this is the
+          // motor that caused the change
+          Serial.println("Motor " + String(i) + " completed homing!");
+        }
+      }
+    }
     motors[i]->run();
   }
 }
@@ -69,6 +87,11 @@ void setMicroSteppingPins() {
 
 void enableMotors(bool state) { digitalWrite(MOTOR_ENABLE_PIN, !state); }
 
+void startMotorHoming(uint8_t motorIndex) {
+  if (motorIndex < 0 || motorIndex >= NUM_MOTORS) return;
+  motors[motorIndex]->setHoming(true);
+}
+
 AccelStepperI2CDir::AccelStepperI2CDir(uint8_t stepPin, uint8_t dirPin) {
   _stepPin = stepPin;
   _dirPin = dirPin;
@@ -84,6 +107,7 @@ AccelStepperI2CDir::AccelStepperI2CDir(uint8_t stepPin, uint8_t dirPin) {
   _lastStepTime = 0;
   _stepPinInverted = true;
   _dirPinInverted = false;
+  _homingActive = false;
 
   // NEW
   _n = 0;
@@ -247,16 +271,16 @@ void AccelStepperI2CDir::setMaxSpeed(float speed) {
 float AccelStepperI2CDir::maxSpeed() { return _maxSpeed; }
 
 void AccelStepperI2CDir::setAcceleration(float acceleration) {
+  if (acceleration == _acceleration) return;
   if (acceleration == 0.0) return;
   if (acceleration < 0.0) acceleration = -acceleration;
-  if (_acceleration != acceleration) {
-    // Recompute _n per Equation 17
-    _n = _n * (_acceleration / acceleration);
-    // New c0 per Equation 7, with correction per Equation 15
-    _c0 = 0.676 * sqrt(2.0 / acceleration) * 1000000.0;  // Equation 15
-    _acceleration = acceleration;
-    computeNewSpeed();
-  }
+
+  // Recompute _n per Equation 17
+  _n = _n * (_acceleration / acceleration);
+  // New c0 per Equation 7, with correction per Equation 15
+  _c0 = 0.676 * sqrt(2.0 / acceleration) * 1000000.0;  // Equation 15
+  _acceleration = acceleration;
+  computeNewSpeed();
 }
 
 float AccelStepperI2CDir::acceleration() { return _acceleration; }
@@ -390,3 +414,6 @@ void AccelStepperI2CDir::stop() {
 bool AccelStepperI2CDir::isRunning() {
   return !(_speed == 0.0 && _targetPos == _currentPos);
 }
+
+void AccelStepperI2CDir::setHoming(bool value) { _homingActive = value; }
+bool AccelStepperI2CDir::isHoming() { return _homingActive; }

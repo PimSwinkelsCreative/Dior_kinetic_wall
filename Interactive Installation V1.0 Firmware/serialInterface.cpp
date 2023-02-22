@@ -106,7 +106,7 @@ void parseSerialBuffer() {
       Serial.println("Homing command received");
 #endif
       for (int i = 0; i < NUM_MOTORS; i++) {
-        startMotorHoming(i);
+        startMotorHoming(i, true);
       }
     } else if (messageArguments[0][0] == 'm') {
       // first check if all fields are set correctly:

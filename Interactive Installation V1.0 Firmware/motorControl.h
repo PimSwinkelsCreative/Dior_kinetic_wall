@@ -22,7 +22,7 @@ void setMicroSteppingPins();
 
 void enableMotors(bool state);
 
-void startMotorHoming(uint8_t motorIndex);
+void startMotorHoming(uint8_t motorIndex, bool resetSensors = false);
 
 class AccelStepperI2CDir {
  public:

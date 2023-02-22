@@ -124,10 +124,11 @@ void setMicroSteppingPins() {
 
 void enableMotors(bool state) { digitalWrite(MOTOR_ENABLE_PIN, !state); }
 
-void startMotorHoming(uint8_t motorIndex) {
+void startMotorHoming(uint8_t motorIndex, bool resetSensors) {
   if (motorIndex < 0 || motorIndex >= NUM_MOTORS) return;
   motors[motorIndex]->setHoming(true);
-  lightSensorChangeFlag = true;  // force the sensor value to be updated
+  if (resetSensors)
+    lightSensorChangeFlag = true;  // force the sensor value to be updated
 }
 
 AccelStepperI2CDir::AccelStepperI2CDir(uint8_t stepPin, uint8_t dirPin,

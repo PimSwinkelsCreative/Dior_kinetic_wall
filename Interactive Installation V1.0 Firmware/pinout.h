@@ -1,12 +1,14 @@
 #pragma once
 
+#include <Arduino.h>
+
 #include "I2C_expander.h"
 
 // ESP pins:
 #define MOTOR1_STEP 12
 #define MOTOR2_STEP 13
-#define MOTOR3_STEP 16
-#define MOTOR4_STEP 17
+#define MOTOR3_STEP 17
+#define MOTOR4_STEP 16
 #define MOTOR5_STEP 18
 #define MOTOR6_STEP 19
 #define MOTOR7_STEP 23
@@ -17,6 +19,7 @@
 #define MS2_PIN 26
 #define MOTOR_ENABLE_PIN 4
 #define EXPANDER_INTERRUPT_PIN 33
+#define LEDPIN LED_BUILTIN  // onboard LED
 
 const uint8_t motorStepPins[] = {MOTOR1_STEP, MOTOR2_STEP, MOTOR3_STEP,
                                  MOTOR4_STEP, MOTOR5_STEP, MOTOR6_STEP,

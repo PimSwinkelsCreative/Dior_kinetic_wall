@@ -1,5 +1,7 @@
 #include "motorControl.h"
 
+// #define DEBUG_HOMING
+
 AccelStepperI2CDir* motors[NUM_MOTORS];
 
 void setupMotors() {
@@ -44,6 +46,9 @@ void updateMotors() {
   // first check the sensors if a change has been detected
   // only read the statusses if the motor is homing to save on reads
   if (lightSensorChangeFlag) {
+#ifdef DEBUG_HOMING
+    Serial.println("sensor change detected!");
+#endif
     for (int i = 0; i < NUM_MOTORS; i++) {
       if (motors[i]->isHoming()) {
         // save the state of the expander pins, pin polarity is handled by
@@ -51,6 +56,10 @@ void updateMotors() {
         motors[i]->setSensorState(
             digitalReadI2CExpanderPin(lightSensorPins[i]));
       }
+#ifdef DEBUG_HOMING
+      Serial.println("sensor " + String(i) +
+                     " state: " + String(motors[i]->getSensorState()));
+#endif
     }
     lightSensorChangeFlag = false;  // clear the flag
   }
@@ -68,6 +77,9 @@ void updateMotors() {
         motors[i]->moveTo(0);  // set the new 0 position as the new setpoint
         motors[i]->setSensorState(
             false);  // allow for a new homing procedure in future
+#ifdef DEBUG_HOMING
+        Serial.println("motor " + String(i) + " reached zero position");
+#endif
       } else {
         // Serial.println("Motor " + String(i + 1) +
         //                " is homing, sensor value is: " +

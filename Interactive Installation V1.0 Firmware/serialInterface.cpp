@@ -1,15 +1,25 @@
 #include "serialInterface.h"
 
 // #define DEBUG_SERIAL_INTERFACE
+#define USE_RX_LED
 
 #define BUFFERLENGTH 500
 char serialBuffer[BUFFERLENGTH + 1];
 unsigned int bufferIndex = 0;
 
-void setupSerialInterface(unsigned int baud) { Serial.begin(baud); }
+void setupSerialInterface(unsigned int baud) {
+  Serial.begin(baud);
+#ifdef USE_RX_LED
+  // define the onboard led as output to us as a serial RX pin:
+  pinMode(LEDPIN, OUTPUT);
+#endif
+}
 
 void updateSerial() {
   while (Serial.available()) {
+#ifdef USE_RX_LED
+    digitalWrite(LEDPIN, HIGH);
+#endif
     char inChar = Serial.read();
     // convert all to lower case
     if (inChar >= 'A' && inChar <= 'Z') inChar += ('a' - 'A');
@@ -30,6 +40,9 @@ void updateSerial() {
       }
     }
   }
+#ifdef USE_RX_LED
+  digitalWrite(LEDPIN, LOW);
+#endif
 }
 
 void parseSerialBuffer() {

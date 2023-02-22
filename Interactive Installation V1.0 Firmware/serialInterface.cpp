@@ -93,6 +93,7 @@ void parseSerialBuffer() {
           printChararray(messageArguments[argument],
                          strlen(messageArguments[argument]));
 #endif
+          argument++;
         }
       }
     }
@@ -101,6 +102,9 @@ void parseSerialBuffer() {
     Serial.println("Number of arguments found: " + String(argument));
 #endif
     if (strcmp(messageArguments[0], "home") == 0) {
+#ifdef DEBUG_SERIAL_INTERFACE
+      Serial.println("Homing command received");
+#endif
       for (int i = 0; i < NUM_MOTORS; i++) {
         startMotorHoming(i);
       }
@@ -124,9 +128,12 @@ void parseSerialBuffer() {
           motorAcceleration = getfloatFromCharArray(
               messageArguments[3], strlen(messageArguments[3]));
         }
-        if (motorAddress >= 0 && motorAddress < NUM_MOTORS) {
+        if (motorAddress >= 0 && motorAddress < NUM_MOTORS && motorSpeed > 0 &&
+            motorSpeed <= MAX_SPEED && goalPosition <= MAX_POS &&
+            goalPosition >= MIN_POS) {
           moveMotorToPosition(motorAddress, goalPosition, motorSpeed,
                               motorAcceleration);
+
 #ifdef DEBUG_SERIAL_INTERFACE
           Serial.print("Trying to move motor " + String(motorAddress) +
                        " to position " + String(goalPosition) + " with speed " +
@@ -135,9 +142,16 @@ void parseSerialBuffer() {
             Serial.print(" and acceleration " + String(motorAcceleration));
           Serial.println();
 #endif
-        } else {
+        } else if (motorAddress < 0 || motorAddress >= NUM_MOTORS) {
           Serial.println("ERROR: motor index out of range");
+        } else if (motorSpeed <= 0 || motorSpeed > MAX_SPEED) {
+          Serial.println("ERROR: motor " + String(motorAddress) +
+                         " speed out of bounds");
+        } else {
+          Serial.println("ERROR: motor " + String(motorAddress) +
+                         " position out of bounds");
         }
+
       } else {
 #ifdef DEBUG_SERIAL_INTERFACE
         Serial.println(

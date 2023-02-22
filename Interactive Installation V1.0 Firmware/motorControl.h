@@ -3,9 +3,9 @@
 #include "globals.h"
 
 #define STEPS_PER_REVOLUTION 200
-#define MICROSTEP_SCALE_FACTOR 16
+#define MICROSTEP_SCALE_FACTOR 8
 
-#define HOMINGACCELERATION 1000
+#define HOMINGACCELERATION (1 * MICROSTEP_SCALE_FACTOR * STEPS_PER_REVOLUTION)
 #define HOMINGSPEED (0.1 * STEPS_PER_REVOLUTION * MICROSTEP_SCALE_FACTOR)
 #define HOMINGSTEPSINCREMENT \
   1000  // just made it a large number to ensure continuous rotation. set the
@@ -13,7 +13,8 @@
 
 void setupMotors();
 
-void moveMotorToPosition(uint8_t index, float position, float speed);
+void moveMotorToPosition(uint8_t index, float position, float speed,
+                         float acceleration = 0);
 
 void updateMotors();
 
@@ -313,7 +314,7 @@ class AccelStepperI2CDir {
   bool _homingActive;
 
   // bool that holds the light detector status:
-  bool _sensorStatus;
+  bool _sensorDetectFlag;
 
   bool _sensorPinInverted;
 };

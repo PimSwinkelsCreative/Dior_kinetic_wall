@@ -8,8 +8,8 @@
 #define HOMINGACCELERATION (1 * MICROSTEP_SCALE_FACTOR * STEPS_PER_REVOLUTION)
 #define HOMINGSPEED (0.1 * STEPS_PER_REVOLUTION * MICROSTEP_SCALE_FACTOR)
 #define HOMINGSTEPSINCREMENT \
-  1000  // just made it a large number to ensure continuous rotation. set the
-        // speed by varying the homingspeed
+  100  // just made it a large number to ensure continuous rotation. set the
+       // speed by varying the homingspeed
 
 void setupMotors();
 
@@ -22,7 +22,7 @@ void setMicroSteppingPins();
 
 void enableMotors(bool state);
 
-void startMotorHoming(uint8_t motorIndex);
+void startMotorHoming(uint8_t motorIndex, bool resetSensors = false);
 
 class AccelStepperI2CDir {
  public:

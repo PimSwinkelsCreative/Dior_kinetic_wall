@@ -11,6 +11,7 @@ void setup() {
   setupSerialInterface(115200);
   setupMotors();
 
+  // perform a homing procedure on startup:
   for (int i = 0; i < NUM_MOTORS; i++) {
     startMotorHoming(i);
   }

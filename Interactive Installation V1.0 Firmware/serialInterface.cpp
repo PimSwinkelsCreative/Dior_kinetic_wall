@@ -1,15 +1,25 @@
 #include "serialInterface.h"
 
 // #define DEBUG_SERIAL_INTERFACE
+#define USE_RX_LED
 
 #define BUFFERLENGTH 500
 char serialBuffer[BUFFERLENGTH + 1];
 unsigned int bufferIndex = 0;
 
-void setupSerialInterface(unsigned int baud) { Serial.begin(baud); }
+void setupSerialInterface(unsigned int baud) {
+  Serial.begin(baud);
+#ifdef USE_RX_LED
+  // define the onboard led as output to us as a serial RX pin:
+  pinMode(LEDPIN, OUTPUT);
+#endif
+}
 
 void updateSerial() {
   while (Serial.available()) {
+#ifdef USE_RX_LED
+    digitalWrite(LEDPIN, HIGH);
+#endif
     char inChar = Serial.read();
     // convert all to lower case
     if (inChar >= 'A' && inChar <= 'Z') inChar += ('a' - 'A');
@@ -30,6 +40,9 @@ void updateSerial() {
       }
     }
   }
+#ifdef USE_RX_LED
+  digitalWrite(LEDPIN, LOW);
+#endif
 }
 
 void parseSerialBuffer() {
@@ -80,6 +93,7 @@ void parseSerialBuffer() {
           printChararray(messageArguments[argument],
                          strlen(messageArguments[argument]));
 #endif
+          argument++;
         }
       }
     }
@@ -88,8 +102,11 @@ void parseSerialBuffer() {
     Serial.println("Number of arguments found: " + String(argument));
 #endif
     if (strcmp(messageArguments[0], "home") == 0) {
+#ifdef DEBUG_SERIAL_INTERFACE
+      Serial.println("Homing command received");
+#endif
       for (int i = 0; i < NUM_MOTORS; i++) {
-        startMotorHoming(i);
+        startMotorHoming(i, true);
       }
     } else if (messageArguments[0][0] == 'm') {
       // first check if all fields are set correctly:
@@ -111,9 +128,12 @@ void parseSerialBuffer() {
           motorAcceleration = getfloatFromCharArray(
               messageArguments[3], strlen(messageArguments[3]));
         }
-        if (motorAddress >= 0 && motorAddress < NUM_MOTORS) {
+        if (motorAddress >= 0 && motorAddress < NUM_MOTORS && motorSpeed > 0 &&
+            motorSpeed <= MAX_SPEED && goalPosition <= MAX_POS &&
+            goalPosition >= MIN_POS) {
           moveMotorToPosition(motorAddress, goalPosition, motorSpeed,
                               motorAcceleration);
+
 #ifdef DEBUG_SERIAL_INTERFACE
           Serial.print("Trying to move motor " + String(motorAddress) +
                        " to position " + String(goalPosition) + " with speed " +
@@ -122,9 +142,16 @@ void parseSerialBuffer() {
             Serial.print(" and acceleration " + String(motorAcceleration));
           Serial.println();
 #endif
-        } else {
+        } else if (motorAddress < 0 || motorAddress >= NUM_MOTORS) {
           Serial.println("ERROR: motor index out of range");
+        } else if (motorSpeed <= 0 || motorSpeed > MAX_SPEED) {
+          Serial.println("ERROR: motor " + String(motorAddress) +
+                         " speed out of bounds");
+        } else {
+          Serial.println("ERROR: motor " + String(motorAddress) +
+                         " position out of bounds");
         }
+
       } else {
 #ifdef DEBUG_SERIAL_INTERFACE
         Serial.println(

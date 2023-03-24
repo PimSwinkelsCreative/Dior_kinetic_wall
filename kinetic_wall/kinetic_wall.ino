@@ -40,8 +40,8 @@ void loop() {
     }
   }
 
-  // update the steppermotors, update as often as possible!
-  updateMotors();
+  // // update the steppermotors, update as often as possible!
+  // updateMotors();
 
   unsigned long loopTime = micros()-startTime;
   // Serial.println("looptime: "+String(loopTime)+"us");

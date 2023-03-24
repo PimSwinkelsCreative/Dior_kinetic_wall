@@ -10,6 +10,13 @@ AccelStepperI2CDir* motors[MAX_NUM_MOTORS];
 
 TaskHandle_t motorUpdateTask;
 
+void updateMotorTaskCode(void* pvParameters) {
+  for (;;) {
+    updateMotors();
+    // vTaskDelay(1);
+  }
+}
+
 void setupMotors() {
 
   for (int i = 0; i < nMotors; i++) {
@@ -24,15 +31,15 @@ void setupMotors() {
 
     // setup the step pins:
     pinMode(motorStepPins[i], OUTPUT);
-
-    //create the motor update task:
-    xTaskCreatePinnedToCore(updateMotorTaskCode, "motorUpdateTask", 100000, NULL, 1, &motorUpdateTask, 0);
-    disableCore0WDT(); //disable the watchdog on core0 so it can run continuously
   }
 
   // setup the global control pins
   setMicroSteppingPins();
   enableMotors(true);
+
+  //create the motor update task:
+  xTaskCreatePinnedToCore(updateMotorTaskCode, "motorUpdateTask", 100000, NULL, 1, &motorUpdateTask, 0);
+  disableCore0WDT(); //disable the watchdog on core0 so it can run continuously
 }
 
 void moveMotorToPosition(uint8_t index, float position, float speed,
@@ -172,14 +179,6 @@ void startMotorHoming(uint8_t motorIndex, bool resetSensors) {
   if (resetSensors)
     lightSensorChangeFlag = true;  // force the sensor value to be updated
 }
-
-void updateMotorTaskCode(void* pvParameters) {
-  for (;;) {
-    updateMotors();
-    // vTaskDelay(1);
-  }
-}
-
 
 AccelStepperI2CDir::AccelStepperI2CDir(uint8_t stepPin, uint8_t dirPin,
   bool sensorPinInverted) {

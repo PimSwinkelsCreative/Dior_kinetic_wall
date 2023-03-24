@@ -3,8 +3,8 @@
 
 #define MAX_NUM_MOTORS 12
 
-#define MICROSTEP_HIGHRES 32
-#define MICROSTEP_LOWRES 16
+#define MICROSTEP_HIGHRES 16
+#define MICROSTEP_LOWRES 8
 
 #define MAX_SPEED 5
 #define MIN_POS -1

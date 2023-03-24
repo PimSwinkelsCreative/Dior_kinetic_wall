@@ -1,24 +1,33 @@
 #include "motorControl.h"
 #include "I2C_expander.h"
+#include "config.h"
+#include "pinout.h"
+#include "buildFlags.h"
 
 // #define DEBUG_HOMING
 
-AccelStepperI2CDir* motors[NUM_MOTORS];
+AccelStepperI2CDir* motors[MAX_NUM_MOTORS];
+
+TaskHandle_t motorUpdateTask;
 
 void setupMotors() {
 
-  for (int i = 0; i < NUM_MOTORS; i++) {
+  for (int i = 0; i < nMotors; i++) {
     // generate motor objects
     motors[i] = new AccelStepperI2CDir(motorStepPins[i], motorDirPins[i],
-                                       SENSORPINS_INVERTED);
-    motors[i]->setMaxSpeed(1 * MICROSTEP_SCALE_FACTOR * STEPS_PER_REVOLUTION);
-    motors[i]->setAcceleration(1 * MICROSTEP_SCALE_FACTOR *
-                               STEPS_PER_REVOLUTION);
+      SENSORPINS_INVERTED);
+    motors[i]->setMaxSpeed(1 * microStep_setting * STEPS_PER_REVOLUTION);
+    motors[i]->setAcceleration(1 * microStep_setting *
+      STEPS_PER_REVOLUTION);
     motors[i]->moveTo(0);
-    motors[i]->setMinPulseWidth(20);  // time in mircoseconds
+    motors[i]->setMinPulseWidth(2);  // time in mircoseconds
 
     // setup the step pins:
     pinMode(motorStepPins[i], OUTPUT);
+
+    //create the motor update task:
+    xTaskCreatePinnedToCore(updateMotorTaskCode, "motorUpdateTask", 100000, NULL, 1, &motorUpdateTask, 0);
+    disableCore0WDT(); //disable the watchdog on core0 so it can run continuously
   }
 
   // setup the global control pins
@@ -27,11 +36,11 @@ void setupMotors() {
 }
 
 void moveMotorToPosition(uint8_t index, float position, float speed,
-                         float acceleration) {
-  float speedValue = speed * MICROSTEP_SCALE_FACTOR * STEPS_PER_REVOLUTION;
+  float acceleration) {
+  float speedValue = speed * microStep_setting * STEPS_PER_REVOLUTION;
   float accelValue =
-      acceleration * MICROSTEP_SCALE_FACTOR * STEPS_PER_REVOLUTION;
-  long positionValue = position * MICROSTEP_SCALE_FACTOR * STEPS_PER_REVOLUTION;
+    acceleration * microStep_setting * STEPS_PER_REVOLUTION;
+  long positionValue = position * microStep_setting * STEPS_PER_REVOLUTION;
 
   motors[index]->setMaxSpeed(speedValue);
   motors[index]->moveTo(positionValue);
@@ -45,23 +54,29 @@ void updateMotors() {
 #ifdef DEBUG_HOMING
     Serial.println("sensor change detected!");
 #endif
-    for (int i = 0; i < NUM_MOTORS; i++) {
+    for (int i = 0; i < nMotors; i++) {
       if (motors[i]->isHoming()) {
         // save the state of the expander pins, pin polarity is handled by
         // function
-        motors[i]->setSensorState(
-            digitalReadI2CExpanderPin(lightSensorPins[i]));
+        bool sensorPinRead = digitalReadI2CExpanderPin(lightSensorPins[i]);
+        motors[i]->setSensorState(sensorPinRead);
+#ifdef INVERT_SENSORS
+        //invert the state if they should stop when the gate is closed. Only used for debugging
+        motors[i]->setSensorState(!sensorPinRead);
+#else
+        motors[i]->setSensorState(sensorPinRead);
+#endif
       }
 #ifdef DEBUG_HOMING
       Serial.println("sensor " + String(i) +
-                     " state: " + String(motors[i]->getSensorState()));
+        " state: " + String(motors[i]->getSensorState()));
 #endif
     }
     lightSensorChangeFlag = false;  // clear the flag
   }
 
   // update the motors
-  for (int i = 0; i < NUM_MOTORS; i++) {
+  for (int i = 0; i < nMotors; i++) {
     // check if the motor is in a homing procedure, if so handle the homing
     // (overwrites all other commands)
     if (motors[i]->isHoming()) {
@@ -69,20 +84,21 @@ void updateMotors() {
         // zero position reached!
         motors[i]->setHoming(false);
         motors[i]->setCurrentPosition(
-            0);  // set the current position to be the 0 coordinate
+          0);  // set the current position to be the 0 coordinate
         motors[i]->moveTo(0);  // set the new 0 position as the new setpoint
         motors[i]->setSensorState(
-            false);  // allow for a new homing procedure in future
+          false);  // allow for a new homing procedure in future
 #ifdef DEBUG_HOMING
         Serial.println("motor " + String(i) + " reached zero position");
 #endif
-      } else {
+      }
+      else {
         // Serial.println("Motor " + String(i + 1) +
         //                " is homing, sensor value is: " +
         //                String(motors[i]->getSensorState()));
 
         motors[i]->move(HOMINGSTEPSINCREMENT);  // move a few steps relative to
-                                                // the current position
+        // the current position
         motors[i]->setAcceleration(HOMINGACCELERATION);
         motors[i]->setMaxSpeed(HOMINGSPEED);
       }
@@ -95,7 +111,8 @@ void updateMotors() {
 
 // set the pins based on the globally defined MICROSTEP_SCALE_FACTOR
 void setMicroSteppingPins() {
-  switch (MICROSTEP_SCALE_FACTOR) {
+  if (tmc220x_version == 8) {
+    switch (microStep_setting) {
     case 2:
       digitalWriteI2CExpanderPin(MOTORS_MS1, HIGH);
       digitalWriteI2CExpanderPin(MOTORS_MS2, LOW);
@@ -113,22 +130,59 @@ void setMicroSteppingPins() {
       digitalWriteI2CExpanderPin(MOTORS_MS2, HIGH);
       break;
     default:
-      Serial.println("ERROR, could not set microstepping pins!");
+      Serial.print("ERROR, could not set microstepping pins. setting not available for TMC220");
+      Serial.println(tmc220x_version);
       break;
+    }
+  }
+  else if (tmc220x_version == 9) {
+    switch (microStep_setting) {
+    case 8:
+      digitalWriteI2CExpanderPin(MOTORS_MS1, LOW);
+      digitalWriteI2CExpanderPin(MOTORS_MS2, LOW);
+      break;
+    case 16:
+      digitalWriteI2CExpanderPin(MOTORS_MS1, HIGH);
+      digitalWriteI2CExpanderPin(MOTORS_MS2, HIGH);
+      break;
+    case 32:
+      digitalWriteI2CExpanderPin(MOTORS_MS1, LOW);
+      digitalWriteI2CExpanderPin(MOTORS_MS2, HIGH);
+      break;
+    case 64:
+      digitalWriteI2CExpanderPin(MOTORS_MS1, HIGH);
+      digitalWriteI2CExpanderPin(MOTORS_MS2, LOW);
+      break;
+    default:
+      Serial.print("ERROR, could not set microstepping pins. setting not available for TMC220");
+      Serial.println(tmc220x_version);
+      break;
+    }
+  }
+  else {
+    Serial.println("ERROR, selected unknown MotorDriver");
   }
 }
 
 void enableMotors(bool state) { digitalWriteI2CExpanderPin(MOTOR_ENABLE, !state); }
 
 void startMotorHoming(uint8_t motorIndex, bool resetSensors) {
-  if (motorIndex < 0 || motorIndex >= NUM_MOTORS) return;
+  if (motorIndex < 0 || motorIndex >= nMotors) return;
   motors[motorIndex]->setHoming(true);
   if (resetSensors)
     lightSensorChangeFlag = true;  // force the sensor value to be updated
 }
 
+void updateMotorTaskCode(void* pvParameters) {
+  for (;;) {
+    updateMotors();
+    // vTaskDelay(1);
+  }
+}
+
+
 AccelStepperI2CDir::AccelStepperI2CDir(uint8_t stepPin, uint8_t dirPin,
-                                       bool sensorPinInverted) {
+  bool sensorPinInverted) {
   _stepPin = stepPin;
   _dirPin = dirPin;
   _currentPos = 0;
@@ -182,7 +236,8 @@ boolean AccelStepperI2CDir::runSpeed() {
     if (_direction == DIRECTION_CW) {
       // Clockwise
       _currentPos += 1;
-    } else {
+    }
+    else {
       // Anticlockwise
       _currentPos -= 1;
     }
@@ -191,7 +246,8 @@ boolean AccelStepperI2CDir::runSpeed() {
     _lastStepTime = time;  // Caution: does not account for costs in step()
 
     return true;
-  } else {
+  }
+  else {
     return false;
   }
 }
@@ -216,7 +272,7 @@ unsigned long AccelStepperI2CDir::computeNewSpeed() {
   long distanceTo = distanceToGo();  // +ve is clockwise from curent location
 
   long stepsToStop =
-      (long)((_speed * _speed) / (2.0 * _acceleration));  // Equation 16
+    (long)((_speed * _speed) / (2.0 * _acceleration));  // Equation 16
 
   if (distanceTo == 0 && stepsToStop <= 1) {
     // We are at the target and its time to stop
@@ -234,12 +290,14 @@ unsigned long AccelStepperI2CDir::computeNewSpeed() {
       // way?
       if ((stepsToStop >= distanceTo) || _direction == DIRECTION_CCW)
         _n = -stepsToStop;  // Start deceleration
-    } else if (_n < 0) {
+    }
+    else if (_n < 0) {
       // Currently decelerating, need to accel again?
       if ((stepsToStop < distanceTo) && _direction == DIRECTION_CW)
         _n = -_n;  // Start accceleration
     }
-  } else if (distanceTo < 0) {
+  }
+  else if (distanceTo < 0) {
     // We are clockwise from the target
     // Need to go anticlockwise from here, maybe decelerate
     if (_n > 0) {
@@ -247,7 +305,8 @@ unsigned long AccelStepperI2CDir::computeNewSpeed() {
       // way?
       if ((stepsToStop >= -distanceTo) || _direction == DIRECTION_CW)
         _n = -stepsToStop;  // Start deceleration
-    } else if (_n < 0) {
+    }
+    else if (_n < 0) {
       // Currently decelerating, need to accel again?
       if ((stepsToStop < -distanceTo) && _direction == DIRECTION_CCW)
         _n = -_n;  // Start accceleration
@@ -259,7 +318,8 @@ unsigned long AccelStepperI2CDir::computeNewSpeed() {
     // First step from stopped
     _cn = _c0;
     _direction = (distanceTo > 0) ? DIRECTION_CW : DIRECTION_CCW;
-  } else {
+  }
+  else {
     // Subsequent step. Works for accel (n is +_ve) and decel (n is -ve).
     _cn = _cn - ((2.0 * _cn) / ((4.0 * _n) + 1));  // Equation 13
     _cn = max(_cn, _cmin);
@@ -270,15 +330,15 @@ unsigned long AccelStepperI2CDir::computeNewSpeed() {
   if (_direction == DIRECTION_CCW) _speed = -_speed;
 
 #if 0
-    Serial.println(_speed);
-    Serial.println(_acceleration);
-    Serial.println(_cn);
-    Serial.println(_c0);
-    Serial.println(_n);
-    Serial.println(_stepInterval);
-    Serial.println(distanceTo);
-    Serial.println(stepsToStop);
-    Serial.println("-----");
+  Serial.println(_speed);
+  Serial.println(_acceleration);
+  Serial.println(_cn);
+  Serial.println(_c0);
+  Serial.println(_n);
+  Serial.println(_stepInterval);
+  Serial.println(distanceTo);
+  Serial.println(stepsToStop);
+  Serial.println("-----");
 #endif
   return _stepInterval;
 }
@@ -313,6 +373,8 @@ void AccelStepperI2CDir::setAcceleration(float acceleration) {
   if (acceleration == 0.0) return;
   if (acceleration < 0.0) acceleration = -acceleration;
 
+  Serial.println("computing acceleration");
+
   // Recompute _n per Equation 17
   _n = _n * (_acceleration / acceleration);
   // New c0 per Equation 7, with correction per Equation 15
@@ -341,7 +403,7 @@ float AccelStepperI2CDir::speed() { return _speed; }
 void AccelStepperI2CDir::step(long step) {
   // _pin[0] is step, _pin[1] is direction
   setOutputPins(
-      _direction ? 0b10 : 0b00);  // Set direction first else get rogue pulses
+    _direction ? 0b10 : 0b00);  // Set direction first else get rogue pulses
   setOutputPins(_direction ? 0b11 : 0b01);  // step HIGH
   // Caution 200ns setup time
   // Delay the minimum allowed pulse width
@@ -373,10 +435,10 @@ void AccelStepperI2CDir::setOutputPins(uint8_t mask) {
   // always first set the direction pin (will only be set if required to
   // minimize I2C traffic):
   digitalWriteI2CExpanderPin(_dirPin, (mask & 0b10) ? (HIGH ^ _dirPinInverted)
-                                                    : (LOW ^ _dirPinInverted));
+    : (LOW ^ _dirPinInverted));
   // set the step pin:
   digitalWrite(_stepPin, (mask & 0b1) ? (HIGH ^ _stepPinInverted)
-                                      : (LOW ^ _stepPinInverted));
+    : (LOW ^ _stepPinInverted));
 }
 
 // Prevents power consumption on the outputs
@@ -412,7 +474,7 @@ void AccelStepperI2CDir::setEnablePin(uint8_t enablePin) {
 }
 
 void AccelStepperI2CDir::setPinsInverted(bool directionInvert, bool stepInvert,
-                                         bool enableInvert) {
+  bool enableInvert) {
   _stepPinInverted = stepInvert;
   _dirPinInverted = directionInvert;
   _enableInverted = enableInvert;
@@ -441,7 +503,7 @@ void AccelStepperI2CDir::runToNewPosition(long position) {
 void AccelStepperI2CDir::stop() {
   if (_speed != 0.0) {
     long stepsToStop = (long)((_speed * _speed) / (2.0 * _acceleration)) +
-                       1;  // Equation 16 (+integer rounding)
+      1;  // Equation 16 (+integer rounding)
     if (_speed > 0)
       move(stepsToStop);
     else
@@ -459,7 +521,8 @@ bool AccelStepperI2CDir::isHoming() { return _homingActive; }
 void AccelStepperI2CDir::setSensorState(bool state) {
   if (_sensorPinInverted) {
     _sensorDetectFlag = !state;
-  } else {
+  }
+  else {
     _sensorDetectFlag = state;
   }
 }

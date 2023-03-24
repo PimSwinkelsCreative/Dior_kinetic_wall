@@ -1,11 +1,16 @@
 #pragma once
-
-#include "globals.h"
-
+#include <Arduino.h>
 extern bool lightSensorChangeFlag;
+extern bool I2CBusy;
 
-void setupI2CExpanders();
+void IRAM_ATTR setLightSensorChangeFlag();
 
-void digitalWriteI2CExpanderPin(uint16_t pin, bool value);
+void setupConfigI2CExpander();
+
+void setupDirectionIoExpander();
+
+void setupSensorIoExpander();
+
+void digitalWriteI2CExpanderPin(uint16_t pin, uint8_t value);
 
 bool digitalReadI2CExpanderPin(uint16_t pin);

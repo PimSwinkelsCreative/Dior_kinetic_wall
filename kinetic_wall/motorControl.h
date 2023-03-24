@@ -1,12 +1,11 @@
 #pragma once
 
-#include "globals.h"
+#include <Arduino.h>
 
 #define STEPS_PER_REVOLUTION 200
-#define MICROSTEP_SCALE_FACTOR 8
 
-#define HOMINGACCELERATION (1 * MICROSTEP_SCALE_FACTOR * STEPS_PER_REVOLUTION)
-#define HOMINGSPEED (0.1 * STEPS_PER_REVOLUTION * MICROSTEP_SCALE_FACTOR)
+#define HOMINGACCELERATION (1 * microStep_setting * STEPS_PER_REVOLUTION)
+#define HOMINGSPEED (0.1 * microStep_setting * STEPS_PER_REVOLUTION)
 #define HOMINGSTEPSINCREMENT \
   100  // just made it a large number to ensure continuous rotation. set the
        // speed by varying the homingspeed

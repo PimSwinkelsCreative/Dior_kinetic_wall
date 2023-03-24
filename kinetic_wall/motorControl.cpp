@@ -153,12 +153,12 @@ void setMicroSteppingPins() {
       digitalWriteI2CExpanderPin(MOTORS_MS2, HIGH);
       break;
     case 32:
-      digitalWriteI2CExpanderPin(MOTORS_MS1, LOW);
-      digitalWriteI2CExpanderPin(MOTORS_MS2, HIGH);
-      break;
-    case 64:
       digitalWriteI2CExpanderPin(MOTORS_MS1, HIGH);
       digitalWriteI2CExpanderPin(MOTORS_MS2, LOW);
+      break;
+    case 64:
+      digitalWriteI2CExpanderPin(MOTORS_MS1, LOW);
+      digitalWriteI2CExpanderPin(MOTORS_MS2, HIGH);
       break;
     default:
       Serial.print("ERROR, could not set microstepping pins. setting not available for TMC220");

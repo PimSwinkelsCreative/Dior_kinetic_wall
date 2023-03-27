@@ -8,12 +8,12 @@
 #define HOMINGSPEED (0.1 * microStep_setting * STEPS_PER_REVOLUTION)
 #define HOMINGSTEPSINCREMENT \
   100  // just made it a large number to ensure continuous rotation. set the
-       // speed by varying the homingspeed
+// speed by varying the homingspeed
 
 void setupMotors();
 
 void moveMotorToPosition(uint8_t index, float position, float speed,
-                         float acceleration = 0);
+  float acceleration = 0);
 
 void updateMotors();
 
@@ -24,9 +24,9 @@ void enableMotors(bool state);
 void startMotorHoming(uint8_t motorIndex, bool resetSensors = false);
 
 class AccelStepperI2CDir {
- public:
+public:
   AccelStepperI2CDir(uint8_t stepPin, uint8_t dirPin,
-                     bool sensorPinInverted = true);
+    bool sensorPinInverted = true);
 
   /// Set the target position. The run() function will try to move the motor (at
   /// most one step per call) from the current position to the target position
@@ -180,14 +180,17 @@ class AccelStepperI2CDir {
   /// for non-inverted \param[in] enableInvert    True for inverted enable pin,
   /// false (default) for non-inverted
   void setPinsInverted(bool directionInvert = false, bool stepInvert = false,
-                       bool enableInvert = false);
+    bool enableInvert = false);
 
   /// Checks to see if the motor is currently running to a target
   /// \return true if the speed is not zero or not at the target position
   bool isRunning();
 
   /// Virtual destructor to prevent warnings during delete
-  virtual ~AccelStepperI2CDir(){};
+  virtual ~AccelStepperI2CDir() {};
+
+  // fucntion that returns the current position of the motor in steps relative to the zero position
+  long getPosition();
 
   void setHoming(bool value);
 
@@ -201,7 +204,13 @@ class AccelStepperI2CDir {
   // state is true if the sensor is at the zero position
   bool getSensorState();
 
- protected:
+  // funtion that returns true if the zero position sensor is high and the previous sensor state is low. Used to only trigger on the change
+  bool getSensorTrigger();
+
+  //function that returns true if the direction is Clockwise and false if the direction is counter clockwise
+  bool getDirection();
+
+protected:
   /// \brief Direction indicator
   /// Symbolic names for the direction the motor is turning
   typedef enum {
@@ -252,7 +261,7 @@ class AccelStepperI2CDir {
   /// 0 means the motor is currently stopped with _speed == 0
   unsigned long _stepInterval;
 
- private:
+private:
   uint8_t _stepPin;  // esp32 pin that sets the steps
   uint8_t _dirPin;  // I2C expander pin that controls the direction of the motor
 
@@ -314,6 +323,8 @@ class AccelStepperI2CDir {
 
   // bool that holds the light detector status:
   bool _sensorDetectFlag;
+  //bool that holds the previous light detector status:
+  bool _prevSensorDetectFlag;
 
   bool _sensorPinInverted;
 };

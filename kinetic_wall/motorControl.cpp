@@ -62,18 +62,15 @@ void updateMotors() {
     Serial.println("sensor change detected!");
 #endif
     for (int i = 0; i < nMotors; i++) {
-      if (motors[i]->isHoming()) {
-        // save the state of the expander pins, pin polarity is handled by
-        // function
-        bool sensorPinRead = digitalReadI2CExpanderPin(lightSensorPins[i]);
-        motors[i]->setSensorState(sensorPinRead);
+      // save the state of the expander pins, pin polarity is handled by
+      // function
+      bool sensorPinRead = digitalReadI2CExpanderPin(lightSensorPins[i]);
 #ifdef INVERT_SENSORS
-        //invert the state if they should stop when the gate is closed. Only used for debugging
-        motors[i]->setSensorState(!sensorPinRead);
+      //invert the state if they should stop when the gate is closed. Only used for debugging
+      motors[i]->setSensorState(!sensorPinRead);
 #else
-        motors[i]->setSensorState(sensorPinRead);
+      motors[i]->setSensorState(sensorPinRead);
 #endif
-      }
 #ifdef DEBUG_HOMING
       Serial.println("sensor " + String(i) +
         " state: " + String(motors[i]->getSensorState()));
@@ -82,36 +79,45 @@ void updateMotors() {
     lightSensorChangeFlag = false;  // clear the flag
   }
 
-  // update the motors
+  // Set the zero positions for the motors that are rotating in a positive direction and rotating in a clockwise direction
   for (int i = 0; i < nMotors; i++) {
-    // check if the motor is in a homing procedure, if so handle the homing
-    // (overwrites all other commands)
-    if (motors[i]->isHoming()) {
-      if (motors[i]->getSensorState()) {
-        // zero position reached!
+    if (motors[i]->getSensorTrigger()) {
+#ifdef DEBUG_HOMING
+      Serial.println("motor " + String(i) + " reached zero position");
+#endif
+      if (motors[i]->isHoming()) {
+        //zero position reached!
+        //initial homing, always set the powiiton to zero:
         motors[i]->setHoming(false);
         motors[i]->setCurrentPosition(
           0);  // set the current position to be the 0 coordinate
-        motors[i]->moveTo(0);  // set the new 0 position as the new setpoint
-        motors[i]->setSensorState(
-          false);  // allow for a new homing procedure in future
-#ifdef DEBUG_HOMING
-        Serial.println("motor " + String(i) + " reached zero position");
-#endif
       }
       else {
-        // Serial.println("Motor " + String(i + 1) +
-        //                " is homing, sensor value is: " +
-        //                String(motors[i]->getSensorState()));
-
-        motors[i]->move(HOMINGSTEPSINCREMENT);  // move a few steps relative to
-        // the current position
-        motors[i]->setAcceleration(HOMINGACCELERATION);
-        motors[i]->setMaxSpeed(HOMINGSPEED);
+        if (motors[i]->getDirection()) {
+          // zero position reached! round the position to the nearest whole rotation and set that to the current value
+          long position = motors[i]->getPosition();
+          long stepsPerRotation = STEPS_PER_REVOLUTION * microStep_setting;
+          position += stepsPerRotation / 2; //add a half rotation to the current position
+          int nFullRotations = position / stepsPerRotation; //calculate the whole rotations (rounding down)
+          position = nFullRotations * stepsPerRotation;
+          motors[i]->setCurrentPosition(position);  //set the current position to be an exact amount of full rotations
+        }
       }
     }
+  }
 
-    //
+  //update the motor movement controls:
+  for (int i = 0;i < nMotors;i++) {
+    // check if the motor is in a homing procedure, if so handle the homing
+    // (overwrites all other commands)
+    if (motors[i]->isHoming()) {
+
+      motors[i]->move(HOMINGSTEPSINCREMENT);  // move a few steps relative to
+      // the current position
+      motors[i]->setAcceleration(HOMINGACCELERATION);
+      motors[i]->setMaxSpeed(HOMINGSPEED);
+    }
+    //update the time untill the next step needs to be executed:
     motors[i]->run();
   }
 }
@@ -198,6 +204,7 @@ AccelStepperI2CDir::AccelStepperI2CDir(uint8_t stepPin, uint8_t dirPin,
   _dirPinInverted = false;
   _homingActive = false;
   _sensorDetectFlag = false;
+  _prevSensorDetectFlag = false;
   _sensorPinInverted = sensorPinInverted;
 
   // NEW
@@ -372,8 +379,6 @@ void AccelStepperI2CDir::setAcceleration(float acceleration) {
   if (acceleration == 0.0) return;
   if (acceleration < 0.0) acceleration = -acceleration;
 
-  Serial.println("computing acceleration");
-
   // Recompute _n per Equation 17
   _n = _n * (_acceleration / acceleration);
   // New c0 per Equation 7, with correction per Equation 15
@@ -518,11 +523,18 @@ void AccelStepperI2CDir::setHoming(bool value) { _homingActive = value; }
 bool AccelStepperI2CDir::isHoming() { return _homingActive; }
 
 void AccelStepperI2CDir::setSensorState(bool state) {
+  //copy the current flag to the previous flag:
+  _prevSensorDetectFlag = _sensorDetectFlag;
   if (_sensorPinInverted) {
     _sensorDetectFlag = !state;
   }
   else {
     _sensorDetectFlag = state;
   }
+
 }
+
+long AccelStepperI2CDir::getPosition() { return _currentPos; }
 bool AccelStepperI2CDir::getSensorState() { return _sensorDetectFlag; }
+bool AccelStepperI2CDir::getSensorTrigger() { return _sensorDetectFlag && !_prevSensorDetectFlag; }
+bool AccelStepperI2CDir::getDirection() { return _direction == DIRECTION_CW; }

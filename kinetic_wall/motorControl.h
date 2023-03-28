@@ -8,12 +8,15 @@
 #define HOMINGSPEED (0.1 * microStep_setting * STEPS_PER_REVOLUTION)
 #define HOMINGSTEPSINCREMENT \
   100  // just made it a large number to ensure continuous rotation. set the
-       // speed by varying the homingspeed
+// speed by varying the homingspeed
 
 void setupMotors();
 
 void moveMotorToPosition(uint8_t index, float position, float speed,
                          float acceleration = 0);
+// fucntion that stages a movement relative to the current position
+void moveMotor(uint8_t index, float amount, float speed,
+               float acceleration = 0);
 
 void updateMotors();
 
@@ -189,6 +192,10 @@ class AccelStepperI2CDir {
   /// Virtual destructor to prevent warnings during delete
   virtual ~AccelStepperI2CDir(){};
 
+  // fucntion that returns the current position of the motor in steps relative
+  // to the zero position
+  long getPosition();
+
   void setHoming(bool value);
 
   bool isHoming();
@@ -200,6 +207,14 @@ class AccelStepperI2CDir {
   // function that returns the state of the zero position sensor value.
   // state is true if the sensor is at the zero position
   bool getSensorState();
+
+  // funtion that returns true if the zero position sensor is high and the
+  // previous sensor state is low. Used to only trigger on the change
+  bool getSensorTrigger();
+
+  // function that returns true if the direction is Clockwise and false if the
+  // direction is counter clockwise
+  bool getDirection();
 
  protected:
   /// \brief Direction indicator
@@ -314,6 +329,8 @@ class AccelStepperI2CDir {
 
   // bool that holds the light detector status:
   bool _sensorDetectFlag;
+  // bool that holds the previous light detector status:
+  bool _prevSensorDetectFlag;
 
   bool _sensorPinInverted;
 };

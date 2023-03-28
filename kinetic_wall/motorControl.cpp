@@ -536,5 +536,15 @@ void AccelStepperI2CDir::setSensorState(bool state) {
 
 long AccelStepperI2CDir::getPosition() { return _currentPos; }
 bool AccelStepperI2CDir::getSensorState() { return _sensorDetectFlag; }
-bool AccelStepperI2CDir::getSensorTrigger() { return _sensorDetectFlag && !_prevSensorDetectFlag; }
+bool AccelStepperI2CDir::getSensorTrigger() {
+  // check whether the sensor reading differs from the last sensor reading:
+  bool result = _sensorDetectFlag && !_prevSensorDetectFlag;
+  if (result) {
+    Serial.println("sensorDetectFlag: " + String(_sensorDetectFlag) +
+                   " prevSensorDetectFlag: " + String(_prevSensorDetectFlag));
+  }
+  _prevSensorDetectFlag = _sensorDetectFlag;  // copy the current sensor reading
+                                              // into the previous reading
+  return result;
+}
 bool AccelStepperI2CDir::getDirection() { return _direction == DIRECTION_CW; }

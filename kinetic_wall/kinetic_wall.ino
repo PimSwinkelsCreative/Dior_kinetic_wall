@@ -36,7 +36,7 @@ void loop() {
   if (millis() - lastPositionUpdate > 2000) {
     lastPositionUpdate = millis();
     for (int i = 0; i < nMotors; i++) {
-      moveMotorToPosition(i, float(random(-100, 100)) / 100.0, 1,5);
+      moveMotor(i, 0.25, 0.5, 5);
     }
   }
 

@@ -1,6 +1,6 @@
 #pragma once
 
-//BUILD
+// BUILD
 #define INVERT_SENSORS true
 // #define SKIP_HOMING
 

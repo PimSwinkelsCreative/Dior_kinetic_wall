@@ -18,4 +18,3 @@ extern uint8_t microStep_setting;
 extern uint8_t animationNumber;
 
 void getConfigSettings();
-

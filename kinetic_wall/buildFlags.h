@@ -1,8 +1,8 @@
 #pragma once
 
-//BUILD
-#define INVERT_SENSORS true
-#define SKIP_HOMING
+// BUILD
+// #define INVERT_SENSORS true
+// #define SKIP_HOMING
 
 // DEBUG FLAGS:
 #define DEBUG_CONFIG

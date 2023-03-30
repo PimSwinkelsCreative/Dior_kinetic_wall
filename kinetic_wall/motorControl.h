@@ -10,7 +10,12 @@
   100  // just made it a large number to ensure continuous rotation. set the
 // speed by varying the homingspeed
 
+extern bool homeDuringAnimation;
+
 void setupMotors();
+
+void moveMotorToNearestPosition(uint8_t index, float position, float speed,
+                                float acceleration);
 
 void moveMotorToPosition(uint8_t index, float position, float speed,
                          float acceleration = 0);

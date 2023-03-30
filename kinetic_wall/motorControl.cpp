@@ -11,6 +11,8 @@ AccelStepperI2CDir* motors[MAX_NUM_MOTORS];
 
 TaskHandle_t motorUpdateTask;
 
+bool homeDuringAnimation = true;
+
 void updateMotorTaskCode(void* pvParameters) {
   for (;;) {
     updateMotors();
@@ -54,6 +56,40 @@ void moveMotorToPosition(uint8_t index, float position, float speed,
   if (acceleration > 0) motors[index]->setAcceleration(accelValue);
 }
 
+void moveMotorToNearestPosition(uint8_t index, float position, float speed,
+                                float acceleration) {
+  float currentPos = float(motors[index]->currentPosition()) /
+                     float(STEPS_PER_REVOLUTION * microStep_setting);
+
+  float distanceToTravel = position - currentPos;
+#ifdef DEBUG_MOTORCONTROL
+  if (index == 0) {
+    Serial.print("Motor Channel: " + String(index) + "\tCurrent Position: " +
+                 String(currentPos) + "\ttarget Positon: " + String(position) +
+                 "\tDistance to travel: " + String(distanceToTravel));
+  }
+#endif
+  // offset the position target so the distance to the current position is
+  // maximum 0.5 rotation:
+  if (distanceToTravel > 0.5) {
+    // position has to be decreased by a number of whole rotations
+    position -= int(distanceToTravel + 0.5);
+
+  } else if (distanceToTravel < -0.5) {
+    // position has to be increased by a number of whole rotations
+    position +=
+        int(-distanceToTravel +
+            0.5);  // distance to travel is negative, soit needs to be inverted
+  }
+
+#ifdef DEBUG_MOTORCONTROL
+  if (index == 0) {
+    Serial.println("\tadjusted Position: " + String(position));
+  }
+#endif
+  moveMotorToPosition(index, position, speed, acceleration);
+}
+
 void moveMotor(uint8_t index, float amount, float speed, float acceleration) {
   float speedValue = speed * microStep_setting * STEPS_PER_REVOLUTION;
   float accelValue = acceleration * microStep_setting * STEPS_PER_REVOLUTION;
@@ -71,12 +107,13 @@ void updateMotors() {
     Serial.println("sensor change detected!");
 #endif
     for (int i = 0; i < nMotors; i++) {
-      // save the state of the expander pins, pin polarity is handled by
-      // function
+      // save the state of the expander pins, pin
+      // polarity is handled by function
       bool sensorPinRead = digitalReadI2CExpanderPin(lightSensorPins[i]);
 #ifdef INVERT_SENSORS
-      // invert the state if they should stop when the gate is closed. Only used
-      // for debugging
+      // invert the state if they should stop when
+      // the gate is closed. Only used for
+      // debugging
       motors[i]->setSensorState(!sensorPinRead);
 #else
       motors[i]->setSensorState(sensorPinRead);
@@ -98,25 +135,31 @@ void updateMotors() {
 #endif
       if (motors[i]->isHoming()) {
         // zero position reached!
-        // initial homing, always set the positon to zero:
+        // initial homing, always set the positon
+        // to zero:
         motors[i]->setHoming(false);
-        motors[i]->setCurrentPosition(
-            0);  // set the current position to be the 0 coordinate
+        motors[i]->setCurrentPosition(0);  // set the current position to be
+                                           // the 0 coordinate
       } else {
         if (motors[i]->getDirection()) {
-          // zero position reached! round the position to the nearest whole
-          // rotation and set that to the current value
+          // zero position reached! round the
+          // position to the nearest whole
+          // rotation and set that to the current
+          // value
           long position = motors[i]->getPosition();
           long stepsPerRotation = STEPS_PER_REVOLUTION * microStep_setting;
-          position += stepsPerRotation /
-                      2;  // add a half rotation to the current position
-          int nFullRotations =
-              position / stepsPerRotation;  // calculate the whole rotations
-                                            // (rounding down)
+          position += stepsPerRotation / 2;  // add a half rotation to the
+                                             // current position
+          int nFullRotations = position / stepsPerRotation;  // calculate the
+                                                             // whole
+                                                             // rotations
+                                                             // (rounding
+                                                             // down)
           position = nFullRotations * stepsPerRotation;
-          motors[i]->setCurrentPosition(
-              position);  // set the current position to be an exact amount of
-                          // full rotations
+          motors[i]->setCurrentPosition(position);  // set the current
+                                                    // position to be an
+                                                    // exact amount of full
+                                                    // rotations
         }
       }
     }
@@ -124,15 +167,19 @@ void updateMotors() {
 
   // update the motor movement controls:
   for (int i = 0; i < nMotors; i++) {
-    // check if the motor is in a homing procedure, if so handle the homing
+    // check if the motor is in a homing
+    // procedure, if so handle the homing
     // (overwrites all other commands)
     if (motors[i]->isHoming()) {
-      motors[i]->move(HOMINGSTEPSINCREMENT);  // move a few steps relative to
+      motors[i]->move(HOMINGSTEPSINCREMENT);  // move a few
+                                              // steps
+                                              // relative to
       // the current position
       motors[i]->setAcceleration(HOMINGACCELERATION);
       motors[i]->setMaxSpeed(HOMINGSPEED);
     }
-    // update the time untill the next step needs to be executed:
+    // update the time untill the next step needs
+    // to be executed:
     motors[i]->run();
   }
 }
@@ -159,7 +206,8 @@ void setMicroSteppingPins() {
         break;
       default:
         Serial.print(
-            "ERROR, could not set microstepping pins. setting not available "
+            "ERROR, could not set microstepping "
+            "pins. setting not available "
             "for TMC220");
         Serial.println(tmc220x_version);
         break;
@@ -184,7 +232,8 @@ void setMicroSteppingPins() {
         break;
       default:
         Serial.print(
-            "ERROR, could not set microstepping pins. setting not available "
+            "ERROR, could not set microstepping "
+            "pins. setting not available "
             "for TMC220");
         Serial.println(tmc220x_version);
         break;
@@ -202,7 +251,8 @@ void startMotorHoming(uint8_t motorIndex, bool resetSensors) {
   if (motorIndex < 0 || motorIndex >= nMotors) return;
   motors[motorIndex]->setHoming(true);
   if (resetSensors)
-    lightSensorChangeFlag = true;  // force the sensor value to be updated
+    lightSensorChangeFlag = true;  // force the sensor value to be
+                                   // updated
 }
 
 AccelStepperI2CDir::AccelStepperI2CDir(uint8_t stepPin, uint8_t dirPin,
@@ -267,7 +317,8 @@ boolean AccelStepperI2CDir::runSpeed() {
     }
     step(_currentPos);
 
-    _lastStepTime = time;  // Caution: does not account for costs in step()
+    _lastStepTime = time;  // Caution: does not account for
+                           // costs in step()
 
     return true;
   } else {
@@ -307,27 +358,31 @@ unsigned long AccelStepperI2CDir::computeNewSpeed() {
 
   if (distanceTo > 0) {
     // We are anticlockwise from the target
-    // Need to go clockwise from here, maybe decelerate now
+    // Need to go clockwise from here, maybe
+    // decelerate now
     if (_n > 0) {
-      // Currently accelerating, need to decel now? Or maybe going the wrong
-      // way?
+      // Currently accelerating, need to decel
+      // now? Or maybe going the wrong way?
       if ((stepsToStop >= distanceTo) || _direction == DIRECTION_CCW)
         _n = -stepsToStop;  // Start deceleration
     } else if (_n < 0) {
-      // Currently decelerating, need to accel again?
+      // Currently decelerating, need to accel
+      // again?
       if ((stepsToStop < distanceTo) && _direction == DIRECTION_CW)
         _n = -_n;  // Start accceleration
     }
   } else if (distanceTo < 0) {
     // We are clockwise from the target
-    // Need to go anticlockwise from here, maybe decelerate
+    // Need to go anticlockwise from here, maybe
+    // decelerate
     if (_n > 0) {
-      // Currently accelerating, need to decel now? Or maybe going the wrong
-      // way?
+      // Currently accelerating, need to decel
+      // now? Or maybe going the wrong way?
       if ((stepsToStop >= -distanceTo) || _direction == DIRECTION_CW)
         _n = -stepsToStop;  // Start deceleration
     } else if (_n < 0) {
-      // Currently decelerating, need to accel again?
+      // Currently decelerating, need to accel
+      // again?
       if ((stepsToStop < -distanceTo) && _direction == DIRECTION_CCW)
         _n = -_n;  // Start accceleration
     }
@@ -339,7 +394,8 @@ unsigned long AccelStepperI2CDir::computeNewSpeed() {
     _cn = _c0;
     _direction = (distanceTo > 0) ? DIRECTION_CW : DIRECTION_CCW;
   } else {
-    // Subsequent step. Works for accel (n is +_ve) and decel (n is -ve).
+    // Subsequent step. Works for accel (n is
+    // +_ve) and decel (n is -ve).
     _cn = _cn - ((2.0 * _cn) / ((4.0 * _n) + 1));  // Equation 13
     _cn = max(_cn, _cmin);
   }
@@ -376,8 +432,8 @@ void AccelStepperI2CDir::setMaxSpeed(float speed) {
   if (_maxSpeed != speed) {
     _maxSpeed = speed;
     _cmin = 1000000.0 / speed;
-    // Recompute _n from current speed and adjust speed if accelerating or
-    // cruising
+    // Recompute _n from current speed and adjust
+    // speed if accelerating or cruising
     if (_n > 0) {
       _n = (long)((_speed * _speed) / (2.0 * _acceleration));  // Equation 16
       computeNewSpeed();

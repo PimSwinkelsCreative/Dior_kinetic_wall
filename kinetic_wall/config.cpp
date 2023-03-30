@@ -28,28 +28,34 @@ void getConfigSettings() {
   Serial.println(nMotors);
 #endif
 
-  // determine the mircostep setting, stored in the 5th bit:
-  // default is MIRCOSTEP_LOWRES
-  if (configByte & 0b10000) {
-    microStep_setting = MICROSTEP_HIGHRES;
-  }
-#ifdef DEBUG_CONFIG
-  Serial.print("Microstep setting: ");
-  Serial.println(microStep_setting);
-#endif
+  //   // determine the mircostep setting, stored in the 5th bit:
+  //   // default is MIRCOSTEP_LOWRES
+  //   if (configByte & 0b10000) {
+  //     microStep_setting = MICROSTEP_HIGHRES;
+  //   }
+  // #ifdef DEBUG_CONFIG
+  //   Serial.print("Microstep setting: ");
+  //   Serial.println(microStep_setting);
+  // #endif
 
-  // determine the motordriver variant, stored in the 6th bit:
-  // default is 8 (tmc2208)
-  if (configByte & 0b100000) {
-    tmc220x_version = 9;
-  }
-#ifdef DEBUG_CONFIG
-  Serial.print("Driver version: TMC220");
-  Serial.println(tmc220x_version);
-#endif
+  microStep_setting = MICROSTEP_LOWRES;  // resulution is set to a fixed
+                                         // fidelity
+
+  //   // determine the motordriver variant, stored in the 6th bit:
+  //   // default is 8 (tmc2208)
+  //   if (configByte & 0b100000) {
+  //     tmc220x_version = 9;
+  //   }
+  // #ifdef DEBUG_CONFIG
+  //   Serial.print("Driver version: TMC220");
+  //   Serial.println(tmc220x_version);
+  // #endif
+
+  tmc220x_version = 9;  // only use the tmc2209 drivers
 
   // determine the animation number to play:
-  animationNumber = (configByte & 0b11000000) >> 6;
+  animationNumber =
+      (configByte & 0b11110000) >> 4;  // use the upper 4 bits for the animation
 #ifdef DEBUG_CONFIG
   Serial.print("Animation to play: ");
   Serial.println(animationNumber);

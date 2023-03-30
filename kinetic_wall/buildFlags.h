@@ -8,4 +8,4 @@
 #define DEBUG_CONFIG
 // #define DEBUG_HOMING
 // #define DEBUG_ANIMATIONS
-#define DEBUG_MOTORCONTROL
+// #define DEBUG_MOTORCONTROL

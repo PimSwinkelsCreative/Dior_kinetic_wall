@@ -45,7 +45,7 @@ void playAnimation(uint8_t currentAnimation) {
     }
     case 4: {
       // random "shooting stars"
-      playShootingStars(200, 2000, 3000, true);
+      playShootingStars(200, 2000, 3000, 5000, true);
     }
     default:
       // Serial.println("ERROR: animation out of range!");
@@ -116,7 +116,8 @@ void playWaveWithOffsetInterleaving(unsigned int animationDuration) {
 }
 
 void playShootingStars(unsigned int minInterval, unsigned int maxInterval,
-                       unsigned int starDuration, bool bothDirections) {
+                       unsigned int minStarDuration,
+                       unsigned int maxStarDuration, bool bothDirections) {
   // generate a new shooting star with a random interval:
   if (millis() > lastShootingStargenerated + shootingStarInterval) {
 #ifdef DEBUG_ANIMATIONS
@@ -145,7 +146,8 @@ void playShootingStars(unsigned int minInterval, unsigned int maxInterval,
         channel = random(nMotors);
       }
       shootingStars[shootingStarIndex].motorChannel = channel;
-      shootingStars[shootingStarIndex].duration = starDuration;
+      shootingStars[shootingStarIndex].duration =
+          random(minStarDuration, maxStarDuration);
       shootingStars[shootingStarIndex].startTime = millis();
       if (bothDirections) {
         shootingStars[shootingStarIndex].direction =

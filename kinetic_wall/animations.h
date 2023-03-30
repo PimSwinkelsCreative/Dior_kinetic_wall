@@ -21,4 +21,5 @@ void playWaveInterleaving(unsigned int animationDuration);
 void playWaveWithOffsetInterleaving(unsigned int animationDuration);
 
 void playShootingStars(unsigned int minInterval, unsigned int maxInterval,
-                       unsigned int starDuration, bool bothDirections);
+                       unsigned int minStarDuration,
+                       unsigned int maxStarDuration, bool bothDirections);

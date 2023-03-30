@@ -54,7 +54,6 @@ void playAnimation(uint8_t currentAnimation) {
 }
 
 void playOscillatingWaveWithOffset(unsigned int animationDuration) {
-  homeDuringAnimation = true;
   float motorOffsets[nMotors];
   for (int i = 0; i < nMotors; i++) {
     motorOffsets[i] = float(i) / float(nMotors);
@@ -71,7 +70,6 @@ void playOscillatingWaveWithOffset(unsigned int animationDuration) {
 }
 
 void playWaveWithOffset(unsigned int animationDuration) {
-  homeDuringAnimation = true;
   float motorOffsets[nMotors];
   for (int i = 0; i < nMotors; i++) {
     motorOffsets[i] = float(i) / float(nMotors);
@@ -84,7 +82,6 @@ void playWaveWithOffset(unsigned int animationDuration) {
 }
 
 void playWaveInterleaving(unsigned int animationDuration) {
-  homeDuringAnimation = true;
   float animationProgress = float(millis()) / float(animationDuration);
   for (int i = 0; i < nMotors; i++) {
     float pos = animationProgress;
@@ -100,7 +97,6 @@ void playWaveInterleaving(unsigned int animationDuration) {
 }
 
 void playWaveWithOffsetInterleaving(unsigned int animationDuration) {
-  homeDuringAnimation = true;
   float motorOffsets[nMotors];
   for (int i = 0; i < nMotors; i++) {
     motorOffsets[i] = float(i) / float(nMotors);
@@ -121,7 +117,6 @@ void playWaveWithOffsetInterleaving(unsigned int animationDuration) {
 
 void playShootingStars(unsigned int minInterval, unsigned int maxInterval,
                        unsigned int starDuration, bool bothDirections) {
-  homeDuringAnimation = false;
   // generate a new shooting star with a random interval:
   if (millis() > lastShootingStargenerated + shootingStarInterval) {
 #ifdef DEBUG_ANIMATIONS

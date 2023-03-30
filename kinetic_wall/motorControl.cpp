@@ -11,8 +11,6 @@ AccelStepperI2CDir* motors[MAX_NUM_MOTORS];
 
 TaskHandle_t motorUpdateTask;
 
-bool homeDuringAnimation = true;
-
 void updateMotorTaskCode(void* pvParameters) {
   for (;;) {
     updateMotors();

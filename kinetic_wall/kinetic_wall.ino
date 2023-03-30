@@ -24,7 +24,7 @@ void setup() {
 
   // perform a homing procedure on startup:
 #ifndef SKIP_HOMING
-  for (int i = 0;i < nMotors;i++) {
+  for (int i = 0; i < nMotors; i++) {
     startMotorHoming(i, true);
   }
 #endif
@@ -32,7 +32,7 @@ void setup() {
 
 void loop() {
   unsigned long startTime = micros();
-  
+
   // if (millis() - lastPositionUpdate > 2000) {
   //   lastPositionUpdate = millis();
   //   for (int i = 0; i < nMotors; i++) {
@@ -40,13 +40,11 @@ void loop() {
   //   }
   // }
 
-
   // // update the steppermotors, update as often as possible!
   // updateMotors();
 
-
   if (millis() - lastPositionUpdate > 10) {
-    playAnimation(0);
+    playAnimation(animationNumber);
   }
 
   unsigned long loopTime = micros() - startTime;
@@ -54,30 +52,75 @@ void loop() {
 }
 
 void playAnimation(uint8_t currentAnimation) {
-
   switch (currentAnimation) {
-  case 0: {
-    int animationDuration = 8000;  //animation duration in milliseconds
-    float motorOffsets[nMotors];
-    for (int i = 0;i < nMotors;i++) {
-      motorOffsets[i] = float(i) / float(nMotors);
+    case 0: {
+      // wave with offset back and forth
+      int animationDuration = 16000;  // animation duration in milliseconds
+      float motorOffsets[nMotors];
+      for (int i = 0; i < nMotors; i++) {
+        motorOffsets[i] = float(i) / float(nMotors);
+      }
+      float animationProgress =
+          float(millis() % animationDuration) / float(animationDuration);
+      for (int i = 0; i < nMotors; i++) {
+        float pos = animationProgress + motorOffsets[i];
+        if (pos > 1) pos -= 1;
+        pos = pos * 2;
+        if (pos > 1) pos = 2 - pos;
+        moveMotorToPosition(i, pos, ANIMATION_SPEED, ANIMATION_ACCELERATION);
+      }
+      break;
     }
-    float animationProgress = float(millis() % animationDuration) / float(animationDuration);
-    for (int i = 0;i < nMotors;i++) {
-      float pos = animationProgress+motorOffsets[i];
-      if(pos>1) pos-=1;
-      pos = pos*2;
-      if(pos>1) pos = 2-pos;
-      moveMotorToPosition(i, pos, 10, 10);
+    case 1: {
+      // wave with offset left to right
+      int animationDuration = 10000;  // animation duration in milliseconds
+      float motorOffsets[nMotors];
+      for (int i = 0; i < nMotors; i++) {
+        motorOffsets[i] = float(i) / float(nMotors);
+      }
+      float animationProgress = float(millis()) / float(animationDuration);
+      for (int i = 0; i < nMotors; i++) {
+        float pos = animationProgress + motorOffsets[i];
+        moveMotorToPosition(i, pos, ANIMATION_SPEED, ANIMATION_ACCELERATION);
+      }
+      break;
     }
-    break;
-  } 
-  case 1:
-  case 2:
-  case 3:
-  default:
-    Serial.println("ERROR: animation out of range!");
-    break;
-
+    case 2: {
+      // wave interleaving
+      int animationDuration = 10000;  // animation duration in milliseconds
+      float animationProgress = float(millis()) / float(animationDuration);
+      for (int i = 0; i < nMotors; i++) {
+        float pos = animationProgress;
+        pos += .12;  // create an offset to make the waves meet in the middle
+        if (i % 2 == 0) {
+          moveMotorToPosition(i, pos, ANIMATION_SPEED, ANIMATION_ACCELERATION);
+        } else {
+          moveMotorToPosition(i, -pos, ANIMATION_SPEED, ANIMATION_ACCELERATION);
+        }
+      }
+      break;
+    }
+    case 3: {
+      // wave with offset interleaving
+      int animationDuration = 10000;  // animation duration in milliseconds
+      float motorOffsets[nMotors];
+      for (int i = 0; i < nMotors; i++) {
+        motorOffsets[i] = float(i) / float(nMotors);
+      }
+      float animationProgress = float(millis()) / float(animationDuration);
+      for (int i = 0; i < nMotors; i++) {
+        float pos = animationProgress + motorOffsets[i];
+        pos += .1;  // create an offset to make the waves meet in the middle
+        if (i % 2 == 0) {
+          moveMotorToPosition(i, pos, ANIMATION_SPEED, ANIMATION_ACCELERATION);
+        } else {
+          moveMotorToPosition(i, -pos, ANIMATION_SPEED, ANIMATION_ACCELERATION);
+        }
+      }
+      break;
+    }
+    default:
+      // Serial.println("ERROR: animation out of range!");
+      break;
   }
 }

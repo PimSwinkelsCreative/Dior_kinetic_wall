@@ -98,7 +98,7 @@ void updateMotors() {
 #endif
       if (motors[i]->isHoming()) {
         // zero position reached!
-        // initial homing, always set the powiiton to zero:
+        // initial homing, always set the positon to zero:
         motors[i]->setHoming(false);
         motors[i]->setCurrentPosition(
             0);  // set the current position to be the 0 coordinate

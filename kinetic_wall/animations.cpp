@@ -45,7 +45,7 @@ void playAnimation(uint8_t currentAnimation) {
     }
     case 4: {
       // random "shooting stars"
-      playShootingStars(200, 2000, 3000, 5000, true);
+      playShootingStars(200, 2000, 2500, 5000, true);
     }
     default:
       // Serial.println("ERROR: animation out of range!");

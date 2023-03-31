@@ -62,7 +62,7 @@ void playAnimation(uint8_t currentAnimation) {
       break;
     case 5:
       // play the dancing silhouette animation
-      playDancingSilhouette(0.4, 0.8, 0.5);
+      playDancingSilhouette(0.2, 0.8, 0.5);
       break;
     default:
       // Serial.println("ERROR: animation out of range!");
@@ -238,8 +238,8 @@ void playDancingSilhouette(float speed, float variation, float spread) {
   float progress =
       float(millis() - silhouetteTravelStartTime) / float(silhouetteTravelTime);
 
-  // set the nonlinearity (0-1)
-  float nonlinearity = 1;
+  // set the nonlinearity (10-2 gives relevant values)
+  float nonlinearity = 10;
 
   for (int i = 0; i < nMotors; i++) {
     float rowProgress =
@@ -247,8 +247,7 @@ void playDancingSilhouette(float speed, float variation, float spread) {
     if (i == 0) {
       Serial.print(rowProgress);
     }
-    rowProgress = nonlinearity * (-0.5 * cos(rowProgress * PI) + 0.5) +
-                  (1 - nonlinearity) * rowProgress;
+    rowProgress = 1 / (1 + exp(-1 * nonlinearity * (rowProgress - 0.5)));
     if (i == 0) {
       Serial.println(" " + String(rowProgress));
     }

@@ -15,10 +15,13 @@ unsigned long lastShootingStargenerated = 0;
 unsigned int shootingStarInterval = 0;
 
 // dancing silhouettes variables:
-float silhouettePosition = 0.5;
 float silhouetteDestination = 0.5;
+float silhouetteStartposition = 0.5;
 unsigned long lastSilhouetteStep = 0;
+unsigned int silhouetteTravelTime = 0;
+unsigned long silhouetteTravelStartTime = 0;
 float silhouetteTravelDistance = 0;
+float silhouettePositions[MAX_NUM_MOTORS];
 
 void setupAnimations() {
   // initialize all the shooting star parameters to 0
@@ -27,6 +30,11 @@ void setupAnimations() {
     shootingStars[i].duration = 0;
     shootingStars[i].motorChannel = 0;
     shootingStars[i].startTime = 0;
+  }
+
+  // initialize the silhouette parameters:
+  for (int i = 0; i < nMotors; i++) {
+    silhouettePositions[i] = 0.5;
   }
 }
 
@@ -54,7 +62,7 @@ void playAnimation(uint8_t currentAnimation) {
       break;
     case 5:
       // play the dancing silhouette animation
-      playDancingSilhouette(0.4, 0.8);
+      playDancingSilhouette(0.4, 0.8, 0.5);
       break;
     default:
       // Serial.println("ERROR: animation out of range!");
@@ -203,45 +211,53 @@ void playShootingStars(unsigned int minInterval, unsigned int maxInterval,
   }
 }
 
-void playDancingSilhouette(float speed, float variation) {
+void playDancingSilhouette(float speed, float variation, float spread) {
   // Generate a new destination if the destination has been reached
-  if (absFloat(silhouettePosition - silhouetteDestination) < 0.05) {
-    float prevSilhouetteDestination = silhouetteDestination;
-    while (absFloat(silhouetteDestination - prevSilhouetteDestination) < 0.1) {
+  if (millis() > silhouetteTravelStartTime +
+                     float(silhouetteTravelTime) * (1.0 + spread)) {
+    silhouetteStartposition = silhouetteDestination;
+    while (absFloat(silhouetteDestination - silhouetteStartposition) < 0.1) {
       silhouetteDestination =
           random(100 * (0.5 - variation / 2.0), 100 * (0.5 + variation / 2.0)) /
           100.0;
     }
+    silhouetteTravelDistance = silhouetteDestination - silhouetteStartposition;
+    silhouetteTravelTime = 1000 * absFloat(silhouetteTravelDistance) / speed;
+    silhouetteTravelStartTime = millis();
+
 #ifdef DEBUG_ANIMATIONS
-    Serial.println("generated a new destination: " +
-                   String(silhouetteDestination));
+    Serial.println(
+        "Generated a new destination: " + String(silhouetteDestination) +
+        "\tTravelDistance: " + String(silhouetteTravelDistance) +
+        "\tTravelTime: " + String(silhouetteTravelTime));
 #endif
-    silhouetteTravelDistance =
-        silhouetteDestination - prevSilhouetteDestination;
   }
 
-  // calculate the progress:
-  float progress = absFloat((silhouettePosition - silhouetteDestination) /
-                            silhouetteTravelDistance);
-  // create a non linear function for the movement:
-  float nonlinearity = 0.3;
-  float stepSize = nonlinearity * (-0.5 * cos(progress * PI) + 0.5) +
-                   (1 - nonlinearity) * progress;
+  // calculate the progress. This progress will be used to calculate all the
+  // motor positions
+  float progress =
+      float(millis() - silhouetteTravelStartTime) / float(silhouetteTravelTime);
 
-  // adjust the stepsize to the timing and speed setting
-  stepSize = stepSize * speed * float((millis() - lastSilhouetteStep)) / 1000.0;
-  lastSilhouetteStep = millis();
-
-  // calculate the new silhouette position:
-  if (silhouetteDestination > silhouettePosition) {
-    silhouettePosition += stepSize;
-  } else {
-    silhouettePosition -= stepSize;
-  }
+  // set the nonlinearity (0-1)
+  float nonlinearity = 1;
 
   for (int i = 0; i < nMotors; i++) {
+    float rowProgress =
+        constrain(progress - spread * (nMotors - i) / nMotors, 0, 1);
+    if (i == 0) {
+      Serial.print(rowProgress);
+    }
+    rowProgress = nonlinearity * (-0.5 * cos(rowProgress * PI) + 0.5) +
+                  (1 - nonlinearity) * rowProgress;
+    if (i == 0) {
+      Serial.println(" " + String(rowProgress));
+    }
+
+    silhouettePositions[i] =
+        silhouetteStartposition + rowProgress * silhouetteTravelDistance;
+
     // move the motors:
-    moveMotorToNearestPosition(i, silhouettePosition, ANIMATION_SPEED,
+    moveMotorToNearestPosition(i, silhouettePositions[i], ANIMATION_SPEED,
                                ANIMATION_ACCELERATION);
   }
 }

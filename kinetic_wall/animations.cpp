@@ -23,30 +23,29 @@ void setupAnimations() {
 
 void playAnimation(uint8_t currentAnimation) {
   switch (currentAnimation) {
-    case 0: {
+    case 0:
       // wave with offset back and forth
       playOscillatingWaveWithOffset(16000);
       break;
-    }
-    case 1: {
+    case 1:
       // wave with offset left to right
       playWaveWithOffset(10000);
       break;
-    }
-    case 2: {
+    case 2:
       // wave interleaving
       playWaveInterleaving(10000);
       break;
-    }
-    case 3: {
+    case 3:
       // wave with offset interleaving
       playWaveWithOffsetInterleaving(10000);
       break;
-    }
-    case 4: {
+    case 4:
       // random "shooting stars"
       playShootingStars(200, 2000, 2500, 5000, true);
-    }
+    case 5:
+      // play the dancing silhouette animation
+      playDancingSilhouette();
+      break;
     default:
       // Serial.println("ERROR: animation out of range!");
       break;
@@ -191,5 +190,11 @@ void playShootingStars(unsigned int minInterval, unsigned int maxInterval,
                                    ANIMATION_ACCELERATION);
       }
     }
+  }
+}
+
+void playDancingSilhouette() {
+  for (int i = 0; i < nMotors; i++) {
+    moveMotorToNearestPosition(i, 0.5, ANIMATION_SPEED, ANIMATION_ACCELERATION);
   }
 }

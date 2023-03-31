@@ -24,4 +24,4 @@ void playShootingStars(unsigned int minInterval, unsigned int maxInterval,
                        unsigned int minStarDuration,
                        unsigned int maxStarDuration, bool bothDirections);
 
-void playDancingSilhouette();
+void playDancingSilhouette(float speed, float variation);

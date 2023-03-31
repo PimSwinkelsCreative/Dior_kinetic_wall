@@ -7,5 +7,5 @@
 // DEBUG FLAGS:
 #define DEBUG_CONFIG
 // #define DEBUG_HOMING
-// #define DEBUG_ANIMATIONS
+#define DEBUG_ANIMATIONS
 // #define DEBUG_MOTORCONTROL

@@ -1,8 +1,11 @@
 #include "animations.h"
 
+#include <math.h>
+
 #include "buildFlags.h"
 #include "config.h"
 #include "motorControl.h"
+#include "utility.h"
 
 // shooting star variables:
 const uint8_t shootingStarQueLength = MAX_NUM_MOTORS;
@@ -10,6 +13,12 @@ shootingStar shootingStars[shootingStarQueLength];
 uint8_t shootingStarIndex = 0;
 unsigned long lastShootingStargenerated = 0;
 unsigned int shootingStarInterval = 0;
+
+// dancing silhouettes variables:
+float silhouettePosition = 0.5;
+float silhouetteDestination = 0.5;
+unsigned long lastSilhouetteStep = 0;
+float silhouetteTravelDistance = 0;
 
 void setupAnimations() {
   // initialize all the shooting star parameters to 0
@@ -45,7 +54,7 @@ void playAnimation(uint8_t currentAnimation) {
       break;
     case 5:
       // play the dancing silhouette animation
-      playDancingSilhouette();
+      playDancingSilhouette(0.4, 0.8);
       break;
     default:
       // Serial.println("ERROR: animation out of range!");
@@ -194,8 +203,45 @@ void playShootingStars(unsigned int minInterval, unsigned int maxInterval,
   }
 }
 
-void playDancingSilhouette() {
+void playDancingSilhouette(float speed, float variation) {
+  // Generate a new destination if the destination has been reached
+  if (absFloat(silhouettePosition - silhouetteDestination) < 0.05) {
+    float prevSilhouetteDestination = silhouetteDestination;
+    while (absFloat(silhouetteDestination - prevSilhouetteDestination) < 0.1) {
+      silhouetteDestination =
+          random(100 * (0.5 - variation / 2.0), 100 * (0.5 + variation / 2.0)) /
+          100.0;
+    }
+#ifdef DEBUG_ANIMATIONS
+    Serial.println("generated a new destination: " +
+                   String(silhouetteDestination));
+#endif
+    silhouetteTravelDistance =
+        silhouetteDestination - prevSilhouetteDestination;
+  }
+
+  // calculate the progress:
+  float progress = absFloat((silhouettePosition - silhouetteDestination) /
+                            silhouetteTravelDistance);
+  // create a non linear function for the movement:
+  float nonlinearity = 0.3;
+  float stepSize = nonlinearity * (-0.5 * cos(progress * PI) + 0.5) +
+                   (1 - nonlinearity) * progress;
+
+  // adjust the stepsize to the timing and speed setting
+  stepSize = stepSize * speed * float((millis() - lastSilhouetteStep)) / 1000.0;
+  lastSilhouetteStep = millis();
+
+  // calculate the new silhouette position:
+  if (silhouetteDestination > silhouettePosition) {
+    silhouettePosition += stepSize;
+  } else {
+    silhouettePosition -= stepSize;
+  }
+
   for (int i = 0; i < nMotors; i++) {
-    moveMotorToNearestPosition(i, 0.5, ANIMATION_SPEED, ANIMATION_ACCELERATION);
+    // move the motors:
+    moveMotorToNearestPosition(i, silhouettePosition, ANIMATION_SPEED,
+                               ANIMATION_ACCELERATION);
   }
 }

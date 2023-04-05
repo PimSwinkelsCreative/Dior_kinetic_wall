@@ -7,8 +7,8 @@
 #define MICROSTEP_LOWRES 8
 
 // motor speed and acceleration settings:
-#define ANIMATION_SPEED 1         // speed setting for the animation
-#define ANIMATION_ACCELERATION 2  // accleration setting for the animation
+#define ANIMATION_SPEED 0.1         // speed setting for the animation
+#define ANIMATION_ACCELERATION 0.5  // accleration setting for the animation
 
 #define SENSORPINS_INVERTED true
 

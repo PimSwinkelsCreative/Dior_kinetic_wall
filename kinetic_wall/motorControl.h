@@ -12,6 +12,9 @@
 
 void setupMotors();
 
+void moveMotorToNearestPosition(uint8_t index, float position, float speed,
+                                float acceleration);
+
 void moveMotorToPosition(uint8_t index, float position, float speed,
                          float acceleration = 0);
 // fucntion that stages a movement relative to the current position

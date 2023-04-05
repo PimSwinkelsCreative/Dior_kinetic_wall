@@ -89,7 +89,6 @@ void playWaveInterleaving(unsigned int animationDuration) {
   float animationProgress = float(millis()) / float(animationDuration);
   for (int i = 0; i < nMotors; i++) {
     float pos = animationProgress;
-    pos += .12;  // create an offset to make the waves meet in the middle
     if (i % 2 == 0) {
       moveMotorToNearestPosition(
           i, pos, MAX_SPEED_FACTOR * 1000.0 / float(animationDuration),

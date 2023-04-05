@@ -43,9 +43,14 @@ void setup() {
 void loop() {
   // update the animation every 10ms
   if (millis() - lastPositionUpdate > 10) {
-    uint8_t animationToPlay = (millis() % animationCyclingDuration) /
-                              (animationCyclingDuration / nAnimations);
-    Serial.println("playing Animation: " + String(animationToPlay));
+    uint8_t animationToPlay;
+    if (cycleThroughAnimations) {
+      animationToPlay = (millis() % animationCyclingDuration) /
+                        (animationCyclingDuration / nAnimations);
+    } else {
+      animationToPlay = animationNumber;
+    }
+    // Serial.println("playing Animation: " + String(animationToPlay));
     playAnimation(animationToPlay);
   }
 }

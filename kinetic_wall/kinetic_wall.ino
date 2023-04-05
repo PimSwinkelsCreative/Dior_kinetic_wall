@@ -11,7 +11,7 @@ unsigned long lastPositionUpdate = 0;
 uint8_t prevLedmask =
     100;  // set the ledmask out of range to force an initial trigger
 
-uint8_t cyclingAnimations[] = {0, 1, 2};
+uint8_t cyclingAnimations[] = {0, 1, 2, 5, 6, 7};
 uint8_t nAnimations = sizeof(cyclingAnimations);
 unsigned long animationCyclingDuration =
     CYCLE_LENGTH_MINUTES * 60 * 1000;  // make the total cycle 5 mins
@@ -45,8 +45,9 @@ void loop() {
   if (millis() - lastPositionUpdate > 10) {
     uint8_t animationToPlay;
     if (cycleThroughAnimations) {
-      animationToPlay = (millis() % animationCyclingDuration) /
-                        (animationCyclingDuration / nAnimations);
+      animationToPlay =
+          cyclingAnimations[(millis() % animationCyclingDuration) /
+                            (animationCyclingDuration / nAnimations)];
     } else {
       animationToPlay = animationNumber;
     }

@@ -21,5 +21,7 @@ extern uint8_t nMotors;
 extern uint8_t tmc220x_version;
 extern uint8_t microStep_setting;
 extern uint8_t animationNumber;
+extern bool cycleThroughAnimations;
+extern float positionOffset;
 
 void getConfigSettings();

@@ -45,6 +45,7 @@ void setupMotors() {
 
 void moveMotorToPosition(uint8_t index, float position, float speed,
                          float acceleration) {
+  position += positionOffset;
   float speedValue = speed * microStep_setting * STEPS_PER_REVOLUTION;
   float accelValue = acceleration * microStep_setting * STEPS_PER_REVOLUTION;
   long positionValue = position * microStep_setting * STEPS_PER_REVOLUTION;

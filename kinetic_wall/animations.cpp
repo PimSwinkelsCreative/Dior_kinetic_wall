@@ -238,7 +238,7 @@ void playDancingSilhouette(float speed, float variation, float spread) {
   float progress =
       float(millis() - silhouetteTravelStartTime) / float(silhouetteTravelTime);
 
-  // set the nonlinearity (10-2 gives relevant values)
+  // set the nonlinearity (10-20 gives relevant values)
   float nonlinearity = 10;
 
   for (int i = 0; i < nMotors; i++) {

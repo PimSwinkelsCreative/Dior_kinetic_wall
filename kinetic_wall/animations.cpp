@@ -65,7 +65,9 @@ void playOscillatingWaveWithOffset(unsigned int animationDuration) {
     if (pos > 1) pos -= 1;
     pos = pos * 2;
     if (pos > 1) pos = 2 - pos;
-    moveMotorToNearestPosition(i, pos, ANIMATION_SPEED, ANIMATION_ACCELERATION);
+    moveMotorToNearestPosition(
+        i, pos, MAX_SPEED_FACTOR * 1000.0 / float(animationDuration / 2),
+        ANIMATION_ACCELERATION);
   }
 }
 
@@ -77,7 +79,9 @@ void playWaveWithOffset(unsigned int animationDuration) {
   float animationProgress = float(millis()) / float(animationDuration);
   for (int i = 0; i < nMotors; i++) {
     float pos = animationProgress + motorOffsets[i];
-    moveMotorToNearestPosition(i, pos, ANIMATION_SPEED, ANIMATION_ACCELERATION);
+    moveMotorToNearestPosition(
+        i, pos, MAX_SPEED_FACTOR * 1000.0 / float(animationDuration),
+        ANIMATION_ACCELERATION);
   }
 }
 
@@ -87,11 +91,13 @@ void playWaveInterleaving(unsigned int animationDuration) {
     float pos = animationProgress;
     pos += .12;  // create an offset to make the waves meet in the middle
     if (i % 2 == 0) {
-      moveMotorToNearestPosition(i, pos, ANIMATION_SPEED,
-                                 ANIMATION_ACCELERATION);
+      moveMotorToNearestPosition(
+          i, pos, MAX_SPEED_FACTOR * 1000.0 / float(animationDuration),
+          ANIMATION_ACCELERATION);
     } else {
-      moveMotorToNearestPosition(i, -pos, ANIMATION_SPEED,
-                                 ANIMATION_ACCELERATION);
+      moveMotorToNearestPosition(
+          i, -pos, MAX_SPEED_FACTOR * 1000.0 / float(animationDuration),
+          ANIMATION_ACCELERATION);
     }
   }
 }
@@ -106,11 +112,13 @@ void playWaveWithOffsetInterleaving(unsigned int animationDuration) {
     float pos = animationProgress + motorOffsets[i];
     pos += .1;  // create an offset to make the waves meet in the middle
     if (i % 2 == 0) {
-      moveMotorToNearestPosition(i, pos, ANIMATION_SPEED,
-                                 ANIMATION_ACCELERATION);
+      moveMotorToNearestPosition(
+          i, pos, MAX_SPEED_FACTOR * 1000.0 / float(animationDuration),
+          ANIMATION_ACCELERATION);
     } else {
-      moveMotorToNearestPosition(i, -pos, ANIMATION_SPEED,
-                                 ANIMATION_ACCELERATION);
+      moveMotorToNearestPosition(
+          i, -pos, MAX_SPEED_FACTOR * 1000.0 / float(animationDuration / 2),
+          ANIMATION_ACCELERATION);
     }
   }
 }
@@ -178,12 +186,13 @@ void playShootingStars(unsigned int minInterval, unsigned int maxInterval,
     // set the inactive motor channels to their zero position
     for (int i = 0; i < nMotors; i++) {
       if (!motorBusy[i]) {
-        moveMotorToNearestPosition(i, 0, ANIMATION_SPEED,
-                                   ANIMATION_ACCELERATION);
+        moveMotorToNearestPosition(
+            i, 0, 1.0 * 1000.0 / ((maxStarDuration + minStarDuration) / 2.0),
+            ANIMATION_ACCELERATION);
       }
     }
   }
-  // cycle through the shooting star list and update the aniamtions:
+  // cycle through the shooting star list and update the animations:
   for (int i = 0; i < shootingStarQueLength; i++) {
     if (millis() >= shootingStars[i].startTime &&
         millis() < shootingStars[i].startTime + shootingStars[i].duration) {
@@ -191,13 +200,15 @@ void playShootingStars(unsigned int minInterval, unsigned int maxInterval,
           float(millis() - shootingStars[i].startTime) /
           float(shootingStars[i].duration);
       if (shootingStars[i].direction) {
-        moveMotorToNearestPosition(shootingStars[i].motorChannel,
-                                   shootingStarProgress, ANIMATION_SPEED,
-                                   ANIMATION_ACCELERATION);
+        moveMotorToNearestPosition(
+            shootingStars[i].motorChannel, shootingStarProgress,
+            MAX_SPEED_FACTOR * 1000.0 / float(shootingStars[i].duration),
+            ANIMATION_ACCELERATION);
       } else {
-        moveMotorToNearestPosition(shootingStars[i].motorChannel,
-                                   -shootingStarProgress, ANIMATION_SPEED,
-                                   ANIMATION_ACCELERATION);
+        moveMotorToNearestPosition(
+            shootingStars[i].motorChannel, -shootingStarProgress,
+            MAX_SPEED_FACTOR * 1000.0 / float(shootingStars[i].duration),
+            ANIMATION_ACCELERATION);
       }
     }
   }

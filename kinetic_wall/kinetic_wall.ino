@@ -11,10 +11,10 @@ unsigned long lastPositionUpdate = 0;
 uint8_t prevLedmask =
     100;  // set the ledmask out of range to force an initial trigger
 
-uint8_t cyclingAnimations[] = {0, 1, 2, 3, 4};
+uint8_t cyclingAnimations[] = {0, 1, 2, 3};
 uint8_t nAnimations = sizeof(cyclingAnimations);
 unsigned long animationCyclingDuration =
-    2 * 60 * 1000;  // make the total cycle 5 mins
+    CYCLE_LENGTH_MINUTES * 60 * 1000;  // make the total cycle 5 mins
 
 void setup() {
   Serial.begin(115200);
@@ -45,7 +45,7 @@ void loop() {
   if (millis() - lastPositionUpdate > 10) {
     uint8_t animationToPlay = (millis() % animationCyclingDuration) /
                               (animationCyclingDuration / nAnimations);
-    // Serial.println("playing Animation: " + String(animationToPlay));
+    Serial.println("playing Animation: " + String(animationToPlay));
     playAnimation(animationToPlay);
   }
 }

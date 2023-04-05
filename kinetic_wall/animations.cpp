@@ -25,27 +25,27 @@ void playAnimation(uint8_t currentAnimation) {
   switch (currentAnimation) {
     case 0: {
       // wave with offset back and forth
-      playOscillatingWaveWithOffset(16000);
+      playOscillatingWaveWithOffset(24000);
       break;
     }
     case 1: {
       // wave with offset left to right
-      playWaveWithOffset(10000);
+      playWaveWithOffset(15000);
       break;
     }
     case 2: {
       // wave interleaving
-      playWaveInterleaving(10000);
+      playWaveInterleaving(15000);
       break;
     }
     case 3: {
       // wave with offset interleaving
-      playWaveWithOffsetInterleaving(10000);
+      playWaveWithOffsetInterleaving(15000);
       break;
     }
     case 4: {
       // random "shooting stars"
-      playShootingStars(200, 2000, 2500, 5000, true);
+      playShootingStars(500, 6000, 5000, 20000, true);
     }
     default:
       // Serial.println("ERROR: animation out of range!");
@@ -65,7 +65,9 @@ void playOscillatingWaveWithOffset(unsigned int animationDuration) {
     if (pos > 1) pos -= 1;
     pos = pos * 2;
     if (pos > 1) pos = 2 - pos;
-    moveMotorToNearestPosition(i, pos, ANIMATION_SPEED, ANIMATION_ACCELERATION);
+    moveMotorToNearestPosition(
+        i, pos, MAX_SPEED_FACTOR * 1000.0 / float(animationDuration / 2),
+        ANIMATION_ACCELERATION);
   }
 }
 
@@ -77,7 +79,9 @@ void playWaveWithOffset(unsigned int animationDuration) {
   float animationProgress = float(millis()) / float(animationDuration);
   for (int i = 0; i < nMotors; i++) {
     float pos = animationProgress + motorOffsets[i];
-    moveMotorToNearestPosition(i, pos, ANIMATION_SPEED, ANIMATION_ACCELERATION);
+    moveMotorToNearestPosition(
+        i, pos, MAX_SPEED_FACTOR * 1000.0 / float(animationDuration),
+        ANIMATION_ACCELERATION);
   }
 }
 
@@ -87,11 +91,13 @@ void playWaveInterleaving(unsigned int animationDuration) {
     float pos = animationProgress;
     pos += .12;  // create an offset to make the waves meet in the middle
     if (i % 2 == 0) {
-      moveMotorToNearestPosition(i, pos, ANIMATION_SPEED,
-                                 ANIMATION_ACCELERATION);
+      moveMotorToNearestPosition(
+          i, pos, MAX_SPEED_FACTOR * 1000.0 / float(animationDuration),
+          ANIMATION_ACCELERATION);
     } else {
-      moveMotorToNearestPosition(i, -pos, ANIMATION_SPEED,
-                                 ANIMATION_ACCELERATION);
+      moveMotorToNearestPosition(
+          i, -pos, MAX_SPEED_FACTOR * 1000.0 / float(animationDuration),
+          ANIMATION_ACCELERATION);
     }
   }
 }
@@ -106,11 +112,13 @@ void playWaveWithOffsetInterleaving(unsigned int animationDuration) {
     float pos = animationProgress + motorOffsets[i];
     pos += .1;  // create an offset to make the waves meet in the middle
     if (i % 2 == 0) {
-      moveMotorToNearestPosition(i, pos, ANIMATION_SPEED,
-                                 ANIMATION_ACCELERATION);
+      moveMotorToNearestPosition(
+          i, pos, MAX_SPEED_FACTOR * 1000.0 / float(animationDuration),
+          ANIMATION_ACCELERATION);
     } else {
-      moveMotorToNearestPosition(i, -pos, ANIMATION_SPEED,
-                                 ANIMATION_ACCELERATION);
+      moveMotorToNearestPosition(
+          i, -pos, MAX_SPEED_FACTOR * 1000.0 / float(animationDuration / 2),
+          ANIMATION_ACCELERATION);
     }
   }
 }
@@ -123,6 +131,7 @@ void playShootingStars(unsigned int minInterval, unsigned int maxInterval,
 #ifdef DEBUG_ANIMATIONS
     Serial.println("generating shooting star");
 #endif
+
     // check what motorChannels are busy:
     bool motorBusy[nMotors];
     uint8_t nBusyChannels = 0;
@@ -173,8 +182,17 @@ void playShootingStars(unsigned int minInterval, unsigned int maxInterval,
       shootingStarInterval = random(minInterval, maxInterval);
       lastShootingStargenerated = millis();
     }
+
+    // set the inactive motor channels to their zero position
+    for (int i = 0; i < nMotors; i++) {
+      if (!motorBusy[i]) {
+        moveMotorToNearestPosition(
+            i, 0, 1.0 * 1000.0 / ((maxStarDuration + minStarDuration) / 2.0),
+            ANIMATION_ACCELERATION);
+      }
+    }
   }
-  // cycle through the shooting star list and update the aniamtions:
+  // cycle through the shooting star list and update the animations:
   for (int i = 0; i < shootingStarQueLength; i++) {
     if (millis() >= shootingStars[i].startTime &&
         millis() < shootingStars[i].startTime + shootingStars[i].duration) {
@@ -182,13 +200,15 @@ void playShootingStars(unsigned int minInterval, unsigned int maxInterval,
           float(millis() - shootingStars[i].startTime) /
           float(shootingStars[i].duration);
       if (shootingStars[i].direction) {
-        moveMotorToNearestPosition(shootingStars[i].motorChannel,
-                                   shootingStarProgress, ANIMATION_SPEED,
-                                   ANIMATION_ACCELERATION);
+        moveMotorToNearestPosition(
+            shootingStars[i].motorChannel, shootingStarProgress,
+            MAX_SPEED_FACTOR * 1000.0 / float(shootingStars[i].duration),
+            ANIMATION_ACCELERATION);
       } else {
-        moveMotorToNearestPosition(shootingStars[i].motorChannel,
-                                   -shootingStarProgress, ANIMATION_SPEED,
-                                   ANIMATION_ACCELERATION);
+        moveMotorToNearestPosition(
+            shootingStars[i].motorChannel, -shootingStarProgress,
+            MAX_SPEED_FACTOR * 1000.0 / float(shootingStars[i].duration),
+            ANIMATION_ACCELERATION);
       }
     }
   }

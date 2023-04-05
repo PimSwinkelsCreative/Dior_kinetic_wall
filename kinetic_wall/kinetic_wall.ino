@@ -1,3 +1,5 @@
+#include <Arduino.h>
+
 #include "I2C_expander.h"
 #include "animations.h"
 #include "buildFlags.h"
@@ -6,8 +8,13 @@
 #include "pinout.h"
 
 unsigned long lastPositionUpdate = 0;
+uint8_t prevLedmask =
+    100;  // set the ledmask out of range to force an initial trigger
 
-uint8_t currentLed = 0;
+uint8_t cyclingAnimations[] = {0, 1, 2};
+uint8_t nAnimations = sizeof(cyclingAnimations);
+unsigned long animationCyclingDuration =
+    CYCLE_LENGTH_MINUTES * 60 * 1000;  // make the total cycle 5 mins
 
 void setup() {
   Serial.begin(115200);
@@ -34,12 +41,11 @@ void setup() {
 }
 
 void loop() {
-  unsigned long startTime = micros();
-
+  // update the animation every 10ms
   if (millis() - lastPositionUpdate > 10) {
-    playAnimation(animationNumber);
+    uint8_t animationToPlay = (millis() % animationCyclingDuration) /
+                              (animationCyclingDuration / nAnimations);
+    Serial.println("playing Animation: " + String(animationToPlay));
+    playAnimation(animationToPlay);
   }
-
-  unsigned long loopTime = micros() - startTime;
-  // Serial.println("looptime: "+String(loopTime)+"us");
 }

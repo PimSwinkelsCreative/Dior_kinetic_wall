@@ -25,27 +25,27 @@ void playAnimation(uint8_t currentAnimation) {
   switch (currentAnimation) {
     case 0: {
       // wave with offset back and forth
-      playOscillatingWaveWithOffset(32000);
+      playOscillatingWaveWithOffset(24000);
       break;
     }
     case 1: {
       // wave with offset left to right
-      playWaveWithOffset(20000);
+      playWaveWithOffset(15000);
       break;
     }
     case 2: {
       // wave interleaving
-      playWaveInterleaving(20000);
+      playWaveInterleaving(15000);
       break;
     }
     case 3: {
       // wave with offset interleaving
-      playWaveWithOffsetInterleaving(20000);
+      playWaveWithOffsetInterleaving(15000);
       break;
     }
     case 4: {
       // random "shooting stars"
-      playShootingStars(500, 8000, 8000, 20000, true);
+      playShootingStars(500, 6000, 5000, 20000, true);
     }
     default:
       // Serial.println("ERROR: animation out of range!");

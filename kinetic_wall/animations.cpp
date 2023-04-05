@@ -123,6 +123,7 @@ void playShootingStars(unsigned int minInterval, unsigned int maxInterval,
 #ifdef DEBUG_ANIMATIONS
     Serial.println("generating shooting star");
 #endif
+
     // check what motorChannels are busy:
     bool motorBusy[nMotors];
     uint8_t nBusyChannels = 0;
@@ -172,6 +173,14 @@ void playShootingStars(unsigned int minInterval, unsigned int maxInterval,
       // set the timer for when to generate the next shooting star:
       shootingStarInterval = random(minInterval, maxInterval);
       lastShootingStargenerated = millis();
+    }
+
+    // set the inactive motor channels to their zero position
+    for (int i = 0; i < nMotors; i++) {
+      if (!motorBusy[i]) {
+        moveMotorToNearestPosition(i, 0, ANIMATION_SPEED,
+                                   ANIMATION_ACCELERATION);
+      }
     }
   }
   // cycle through the shooting star list and update the aniamtions:

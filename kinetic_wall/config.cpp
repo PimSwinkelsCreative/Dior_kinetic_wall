@@ -43,14 +43,17 @@ void getConfigSettings() {
     case 'B':
       // small rectangular variant
       nMotors = 7;
+      positionOffset = -0.03;
       break;
     case 'C':
       // high variant
       nMotors = 12;
+      positionOffset = 0.02;
       break;
     case 'D':
       // wide variant
       nMotors = 6;
+      positionOffset = 0;
       break;
     default:
       break;

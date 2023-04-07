@@ -14,6 +14,12 @@ void playAnimation(uint8_t currentAnimation);
 
 void playOscillatingWaveWithOffset(unsigned int animationDuration);
 
+void playOscillatingWaveWithSmallOffset(unsigned int animationDuration);
+
+void playVerticalSnake(unsigned int animationDuration);
+
+void playArrow(unsigned int animationDuration);
+
 void playWaveWithOffset(unsigned int animationDuration);
 
 void playWaveInterleaving(unsigned int animationDuration);

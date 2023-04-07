@@ -23,30 +23,35 @@ void setupAnimations() {
 
 void playAnimation(uint8_t currentAnimation) {
   switch (currentAnimation) {
-    case 0: {
+    case 0:
       // wave with offset back and forth
-      playOscillatingWaveWithOffset(24000);
+      playOscillatingWaveWithOffset(22000);
       break;
-    }
-    case 1: {
+    case 1:
       // wave with offset left to right
-      playWaveWithOffset(15000);
+      playWaveWithOffset(12000);
       break;
-    }
-    case 2: {
+    case 2:
       // wave interleaving
-      playWaveInterleaving(15000);
+      playWaveInterleaving(12000);
       break;
-    }
-    case 3: {
+    case 3:
       // wave with offset interleaving
-      playWaveWithOffsetInterleaving(15000);
+      playWaveWithOffsetInterleaving(12000);
       break;
-    }
-    case 4: {
+    case 4:
       // random "shooting stars"
       playShootingStars(500, 6000, 5000, 20000, true);
-    }
+      break;
+    case 5:
+      playOscillatingWaveWithSmallOffset(20000);
+      break;
+    case 6:
+      playVerticalSnake(20000);
+      break;
+    case 7:
+      playArrow(20000);
+      break;
     default:
       // Serial.println("ERROR: animation out of range!");
       break;
@@ -65,6 +70,64 @@ void playOscillatingWaveWithOffset(unsigned int animationDuration) {
     if (pos > 1) pos -= 1;
     pos = pos * 2;
     if (pos > 1) pos = 2 - pos;
+    moveMotorToNearestPosition(
+        i, pos, MAX_SPEED_FACTOR * 1000.0 / float(animationDuration / 2),
+        ANIMATION_ACCELERATION);
+  }
+}
+
+void playOscillatingWaveWithSmallOffset(unsigned int animationDuration) {
+  float motorOffsets[nMotors];
+  for (int i = 0; i < nMotors; i++) {
+    motorOffsets[i] = float(i) / (float(2 * nMotors));
+  }
+  float animationProgress =
+      float(millis() % animationDuration) / float(animationDuration);
+  for (int i = 0; i < nMotors; i++) {
+    float pos = animationProgress + motorOffsets[i];
+    if (pos > 1) pos -= 1;
+    pos = pos * 2;
+    if (pos > 1) pos = 2 - pos;
+    moveMotorToNearestPosition(
+        i, pos, MAX_SPEED_FACTOR * 1000.0 / float(animationDuration / 2),
+        ANIMATION_ACCELERATION);
+  }
+}
+
+void playVerticalSnake(unsigned int animationDuration) {
+  float motorOffsets[nMotors];
+  for (int i = 0; i < nMotors; i++) {
+    motorOffsets[i] = float(i) / (float(4 * nMotors));
+  }
+  float animationProgress =
+      float(millis() % animationDuration) / float(animationDuration);
+  for (int i = 0; i < nMotors; i++) {
+    float pos = animationProgress + motorOffsets[i];
+    if (pos > 1) pos -= 1;
+    pos = pos * 2;
+    if (pos > 1) pos = 2 - pos;
+    pos = 0.1 + pos * 0.8;
+    moveMotorToNearestPosition(
+        i, pos, MAX_SPEED_FACTOR * 1000.0 / float(animationDuration / 2),
+        ANIMATION_ACCELERATION);
+  }
+}
+
+void playArrow(unsigned int animationDuration) {
+  float motorOffsets[nMotors];
+  uint8_t middleRow = nMotors / 2;
+  for (int i = 0; i < nMotors; i++) {
+    motorOffsets[i] = float(-abs(i - middleRow)) / (float(3 * nMotors));
+  }
+  float animationProgress =
+      float(millis() % animationDuration) / float(animationDuration);
+  for (int i = 0; i < nMotors; i++) {
+    float pos = animationProgress + motorOffsets[i];
+    if (pos > 1) pos -= 1;
+    if (pos < 0) pos += 1;
+    pos = pos * 2;
+    if (pos > 1) pos = 2 - pos;
+    pos = 0.1 + pos * 0.8;
     moveMotorToNearestPosition(
         i, pos, MAX_SPEED_FACTOR * 1000.0 / float(animationDuration / 2),
         ANIMATION_ACCELERATION);

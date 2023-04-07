@@ -9,12 +9,12 @@
 
 // motor speed and acceleration settings:
 #define MAX_SPEED_FACTOR \
-  2.0  // facotr at which the max speed is set relative to the required speed.
+  1.5  // facotr at which the max speed is set relative to the required speed.
        // Will determine how fast the transitions go
-#define ANIMATION_ACCELERATION 1  // accleration setting for the animation
+#define ANIMATION_ACCELERATION 0.02  // acceleration setting for the animation
 
 // anination sequencing:
-#define CYCLE_LENGTH_MINUTES 2  // minutes that the entire cycle takes
+#define CYCLE_LENGTH_MINUTES 5  // minutes that the entire cycle takes
 
 // global variables:
 extern uint8_t nMotors;
